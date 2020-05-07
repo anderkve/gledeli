@@ -140,7 +140,7 @@ class Interface:
     @nld_pars.setter
     def nld_pars(self, pars) -> None:
         self._nld_pars = pars
-        logger.info(f"Setting nld_pars to: {pars}")
+        logger.debug(f"Setting nld_pars to: {pars}")
 
     @property
     def gsf_pars(self) -> Optional[Dict]:
@@ -149,6 +149,6 @@ class Interface:
     @gsf_pars.setter
     def gsf_pars(self, pars) -> None:
         self._gsf_pars = pars
-        logger.info(f"Setting gsf_pars to: {pars}")
+        logger.debug(f"Setting gsf_pars to: {pars}")
 
 

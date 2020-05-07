@@ -11,8 +11,10 @@ from gledeli import Interface
 from ompy import NormalizationParameters
 
 logger = logging.getLogger(__name__)
-fmtstring = '%(name)s %(levelname)s:%(message)s'
-logging.basicConfig(format=fmtstring, level=logging.DEBUG)
+log_stream = StringIO()
+fmtstring = '{name} {levelname}: {message}'
+logging.basicConfig(stream=log_stream,
+                    format=fmtstring, style="{", level=logging.INFO)
 
 #
 # Global initialization
@@ -89,14 +91,6 @@ def run(settings):
     Returns:
         success: Boolean indicating whether all went well
     """
-
-    # setup logger
-    log_stream = StringIO()
-    fmtstring = '%(name)s %(levelname)s:%(message)s'
-    logging.basicConfig(stream=log_stream,
-                        format=fmtstring, level=logging.INFO)
-
-    # Do the work
     try:
         glede.run()
         success = True
@@ -110,6 +104,8 @@ def run(settings):
     # Construct a dict with info on how things went
     run_info = {}
     run_info['log_msg'] = log_stream.getvalue()
+    log_stream.seek(0)
+    log_stream.truncate(0)
     run_info['success'] = success
 
     return run_info
@@ -132,11 +128,11 @@ def get_results():
 
 
 if __name__ == "__main__":
-    log_stream = StringIO()
-    fmtstring = '%(name)s %(levelname)s:%(message)s'
-    logging.basicConfig(stream=log_stream,
-                        format=fmtstring, level=logging.DEBUG)
     glede.run()
+    print(log_stream.getvalue())
+    log_stream.seek(0)
+    log_stream.truncate(0)
+
     print("\n Give me a break")
     glede.run()
     print(log_stream.getvalue())
