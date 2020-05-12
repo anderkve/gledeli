@@ -26,6 +26,7 @@ logging.basicConfig(stream=log_stream,
 # initialize as this is not done from withing GAMBIT
 glede = ParametrizedInterface().set_settings()
 
+
 def set_model_pars(pars):
     """
     Communicate model parameters from GAMBIT to GLEDELi

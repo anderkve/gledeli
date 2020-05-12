@@ -62,8 +62,8 @@ class ParametrizedInterface:
     def set_exp_data_D0_Gg(self):
         """ Set observables D0 and Gg (and target spin"""
         norm_pars = self.glede.norm_pars
-        norm_pars.D0 = [6.8, 0.6]  # eV
-        norm_pars.Gg = [113., 13.]  # meV
+        norm_pars.D0 = [7.6, 0.6]  # eV
+        norm_pars.Gg = [153., 13.]  # meV
         norm_pars.Jtarget = 5/2  # A-1 nucleus
 
     def set_spincut_parameters(self):
