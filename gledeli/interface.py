@@ -78,7 +78,7 @@ class Interface:
 
         assert self._matrix_std.has_equal_binning(self._matrix)
 
-        if abs(self._matrix.sum() - len(self._matrix.Ex)) < 0.1:
+        if abs(self._matrix.values.sum() - len(self._matrix.Ex)) > 0.1:
             raise NotImplementedError("Input matrix does not seem normalized "
                                       "per Ex row. The current implementation "
                                       "relies on this.")
