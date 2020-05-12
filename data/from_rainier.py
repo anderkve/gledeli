@@ -26,6 +26,10 @@ mat = om.Matrix(path="1Gen.m")
 smooth(mat)
 mat.rebin(axis="Eg", factor=4)
 mat.rebin(axis="Ex", factor=4)
+
+mat.cut(axis="Ex", Emin=4000, Emax=7000)
+mat.cut(axis="Eg", Emin=1000, Emax=7000)
+
 # mat.plot()
 
 std = mat.copy()
