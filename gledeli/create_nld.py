@@ -28,7 +28,7 @@ class CreateNLD:
                  energy: Optional[np.array] = None):
         self.data_path = Path(data_path)
         self.pars = pars
-        self.energy = None
+        self.energy = energy
 
         self._nld = None
 
