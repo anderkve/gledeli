@@ -25,7 +25,7 @@ class LnlikeFirstGen():
         self.nld = nld
         self.gsf = gsf
         self.matrix = matrix
-        self.matrix_std = matrix
+        self.matrix_std = matrix_std
 
         self.resolutionEx: Optional[float] = 0.15
         self.resolutionEg: Optional[float] = 0.1
