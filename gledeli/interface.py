@@ -78,6 +78,11 @@ class Interface:
 
         assert self._matrix_std.has_equal_binning(self._matrix)
 
+        if abs(self._matrix.sum() - len(self._matrix.Ex)) < 0.1:
+            raise NotImplementedError("Input matrix does not seem normalized "
+                                      "per Ex row. The current implementation "
+                                      "relies on this.")
+
     def run(self):
         """ Run calculations """
         self._nld = CreateNLD(data_path=self.data_path, pars=self.nld_pars)
