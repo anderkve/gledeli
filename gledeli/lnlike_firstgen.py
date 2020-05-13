@@ -34,7 +34,7 @@ class LnlikeFirstGen():
         self._model = None
         pass
 
-    def model_firsgen(self) -> Matrix:
+    def create(self) -> Matrix:
         """ Create first gen from model nld and gsf
 
         In the conversion from gsf to transmission coefficient, we assumes
@@ -94,7 +94,7 @@ class LnlikeFirstGen():
         matrix_std = self.matrix_std if matrix_std is None else matrix_std
         model = self._model if model is None else model
         if model is None:
-            model = self.model_firsgen()
+            model = self.create()
 
         # resolution: whether to extend beyond Ex=Eg
         resolution = np.zeros_like(matrix.Ex)
