@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import os
 import sys
-from typing import Dict, Union, Optional
+from typing import Dict, Union, Optional, Tuple
 from pathlib import Path
 from tqdm import tqdm
 
@@ -18,6 +18,8 @@ gledelig_path = Path(__file__).parent / gledelig_path
 sys.path.insert(0, str(gledelig_path.resolve()))
 from gledeli.create_nld import CreateNLD  # noqa
 from gledeli.create_gsf import CreateGSF  # noqa
+from gledeli.dataloader import DataLoader  # noqa
+from gledeli.lnlike_firstgen import LnlikeFirstGen  # noqa
 
 MIN_PYTHON = (3, 7)
 if sys.version_info < MIN_PYTHON:
@@ -28,16 +30,16 @@ class HDFLoader:
     def __init__(self):
         pass
 
-    def load(self, fname: Union[str, Path]) -> Dict[str, pd.DataFrame]:
+    def load(self, fname: Union[str, Path]) -> Tuple[pd.DataFrame, Dict]:
         """ loads results from hdf5 file as pd.DataFrame
 
         Args:
             fname: Filename for GAMBIT's hdf5 output
 
         Returns:
-            data: dict with keys ["gsf, "nld", "lnlike"] containing parameters
-                for those. Note that data["lnlike"] also contains the
-                posterior weights.
+            tuple[data, names]:
+                data is nld, gsf and likelihood and posterior parameterers,
+                and names is a dict with the names of the parameters per model
         """
         file = h5py.File(fname, 'r')
         group = file['/scan_output/']
@@ -45,20 +47,26 @@ class HDFLoader:
         data = {}
         data["gsf"] = self.hdf5_gsf_pars(group)
         data["nld"] = self.hdf5_nld_pars(group)
-        data["lnlike"] = self.hdf5_lnlike_pars(group)
+        data["results"] = self.hdf5_results_pars(group)
 
         # Remove bad points:
-        mask = data["lnlike"]['LogLike_isvalid']
+        mask = data["results"]['LogLike_isvalid']
         for key, value in data.items():
             for key2, value2 in value.items():
                 data[key][key2] = data[key][key2][mask]
-        # Solved: For some reason loglike False survives?
-        # TODO: Beatify
+        # TODO: Beatify code above?
 
         # convert to dataframe
+        names = {}
         for key, value in data.items():
             data[key] = pd.DataFrame.from_dict(value)
-        return data
+            names[key] = data[key].columns.values
+
+        # verify_integrity ensures that we don't have pars with same name
+        data = pd.concat([data["nld"], data["gsf"], data["results"]],
+                         axis=1, verify_integrity=True)
+
+        return data, names
 
     @staticmethod
     def hdf5_gsf_pars(group: h5py._hl.group.Group) -> dict:
@@ -80,7 +88,7 @@ class HDFLoader:
         return nld_data
 
     @staticmethod
-    def hdf5_lnlike_pars(group: h5py._hl.group.Group) -> dict:
+    def hdf5_results_pars(group: h5py._hl.group.Group) -> dict:
         data = {}
         data['posterior_weights'] = np.array(group["Posterior"])
         data['LogLike'] = np.array(group["LogLike"])
@@ -151,6 +159,50 @@ def gsf_plot(df: pd.DataFrame, sort_by: Optional[str] = "posterior_weights",
     ax.set_yscale('log')
     ax.set_xlabel(rf"$\gamma$-ray energy $E_\gamma$~[MeV]")
     ax.set_ylabel(rf"$\gamma$-SF f($E_\gamma$) [MeV$^{{-3}}$]")
+    return fig, ax
+
+
+def compare_firstgen(pars: pd.DataFrame, ax=None):
+    """ Compare input first generation spectrum to a fit
+
+    Args:
+        nld_pars: one row of DataFrame containing parmeters
+        ax (matplotlib axis, optional): The axis to plot onto. If not
+            provided, a new figure is created
+
+    Returns:
+        The figure and axis used.
+    """
+    if ax is None:
+        fig, ax = plt.subplots(2, 1, constrained_layout=True)
+        fig.set_size_inches(4, 6)
+    else:
+        fig, ax = ax.figure, ax
+
+    data_path = "../Backends/installed/gledeli/1.0/data/"
+    dataloader = DataLoader(data_path)
+    input_matrix = dataloader.matrix
+
+    nld = CreateNLD(pars=pars.to_dict(), data_path=data_path)
+    gsf = CreateGSF(pars=pars.to_dict())
+    fg_creator = LnlikeFirstGen(nld=nld, gsf=gsf, matrix=input_matrix,
+                                matrix_std=None)
+    model = fg_creator.create()
+
+    input_matrix.plot(ax=ax[0], scale="log", vmin=1e-3, vmax=1e-1)
+    model.plot(ax=ax[1], scale="log", vmin=1e-3, vmax=1e-1)
+
+    x = np.linspace(*ax[0].get_ylim())
+    ax[0].plot(x, x, "r--", label="E_x = E_g")
+    ax[1].plot(x, x, "r--", label="E_x = E_g")
+
+    ax[0].text(0.05, 0.05, r"(input)",
+               fontsize=plt.rcParams["axes.labelsize"],
+               transform=ax[0].transAxes)
+
+    ax[1].text(0.05, 0.05, r"(model)",
+               fontsize=plt.rcParams["axes.labelsize"],
+               transform=ax[1].transAxes)
     return fig, ax
 
 
@@ -307,56 +359,64 @@ if __name__ == "__main__":
     figdir.mkdir(exist_ok=True)
 
     hdfloader = HDFLoader()
-    data = hdfloader.load(results_file)
+    results, names = hdfloader.load(results_file)
+    # create equally weighted samples
+    results_equal = results.sample(n=100, weights="posterior_weights",
+                                   random_state=6548)
 
-    res_gsf = pd.concat([data["gsf"], data["lnlike"]], axis=1)
-    res_nld = pd.concat([data["nld"], data["lnlike"]], axis=1)
-
-    fig, ax = gsf_plot(res_gsf)
+    # gsf plots
+    fig, ax = gsf_plot(results)
     fig.suptitle("sampels sorted by posterior_weight")
     fig.savefig(figdir/"gsf_sampels sorted by posterior_weight")
 
-    fig, ax = gsf_plot(res_gsf, sort_by="LogLike")
+    fig, ax = gsf_plot(results, sort_by="LogLike")
     fig.suptitle("sampels sorted by likelihood")
     fig.savefig(figdir/"gsf_sampels sorted by likelihood")
 
-    res_gsf_equal = res_gsf.sample(n=100, weights="posterior_weights",
-                                   random_state=6548)
-    fig, ax = gsf_plot(res_gsf_equal, sort_by=None)
+    fig, ax = gsf_plot(results_equal, sort_by=None)
     fig.suptitle("random samples, equally weighted")
     fig.savefig(figdir/"gsf_random samples_eqweight")
 
+    # nld plots
     def wnld_plot(*args, **kwargs):
         """ wrapper """
         return nld_plot(*args, **kwargs, data_path=gledelig_path/"data")
 
-    fig, ax = wnld_plot(res_nld)
+    fig, ax = wnld_plot(results)
     fig.suptitle("sampels sorted by posterior_weight")
     fig.savefig(figdir/"nld_sampels sorted by posterior_weight")
 
-    fig, ax = wnld_plot(res_nld, sort_by="LogLike")
+    fig, ax = wnld_plot(results, sort_by="LogLike")
     fig.suptitle("sampels sorted by likelihood")
     fig.savefig(figdir/"nld_sampels sorted by likelihood")
 
-    res_nld_equal = res_nld.sample(n=100, weights="posterior_weights",
-                                   random_state=6548)
-    fig, ax = wnld_plot(res_nld_equal, sort_by=None)
+    fig, ax = wnld_plot(results_equal, sort_by=None)
     fig.suptitle("random samples, equally weighted")
     fig.savefig(figdir/"nld_random samples eqweight")
 
-    # plt.show()
+    # firstgen plots
+    fig, ax = \
+        compare_firstgen(results.iloc[results['posterior_weights'].idxmax()])
+    fig.savefig(figdir/"fg_posterior_max")
 
-    for key in tqdm(res_gsf.keys()):
-        if key in data["lnlike"].keys():
+    for i, (_, row) in enumerate(results_equal.iterrows()):
+        fig, ax = \
+            compare_firstgen(row)
+        fig.savefig(figdir/f"fg_random_{i}")
+        plt.close(fig)
+        if i > 10:
+            break
+
+    plt.show()
+
+    for key in tqdm(results.keys()):
+        if key in names["results"]:
             continue
-        fig, _ = plot_posterior_marginals(res_gsf, key, alpha=0.5)
-        fig.savefig(figdir / ('gsf_' + key + '_posterior_hist.png'))
+        elif key in names["nld"]:
+            base = "nld"
+        elif key in names["gsf"]:
+            base = "gsf"
+        fig, _ = plot_posterior_marginals(results, key, alpha=0.5)
+        fig.savefig(figdir / (f'{base}_{key}_posterior_hist.png'))
+        plt.close(fig)
 
-        # fig.close()
-
-    for key in tqdm(res_nld.keys()):
-        if key in data["lnlike"].keys():
-            continue
-        fig, _ = plot_posterior_marginals(res_nld, key, alpha=0.5)
-        fig.savefig(figdir / ('nld_' + key + '_posterior_hist.png'))
-        # fig.close()
