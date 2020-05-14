@@ -59,10 +59,10 @@ class CreateNLD:
         model = self.model_nld(bin_mids_model)
 
         # find combined value in Ecrit bin
-        floor_to_Ecrit = self.pars['Ecrit'] - bin_edges_discrete[-1]
+        floor_to_Ecrit = self.pars['Ecrit'] - bin_edges_discrete[ibin_last]
         levels_dists = discrete[-1] * floor_to_Ecrit
-        levels_model = model[0] * (1-floor_to_Ecrit)
         width_Ecrit = self.energy[ibin_last+1] - self.energy[ibin_last]
+        levels_model = model[0] * width_Ecrit * (1-floor_to_Ecrit)
         density_Ecrit_comb = (levels_dists + levels_model) / width_Ecrit
 
         # combine replacing Ecrit by the found value above
