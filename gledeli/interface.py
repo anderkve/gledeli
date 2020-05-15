@@ -93,10 +93,6 @@ class Interface:
         assert_string = "lnlike below cutoff for {}"
         self._lnlike = {}
 
-        lnlike = lnlikefg.lnlike()
-        assert self.lnlike_above_cutoff(lnlike), assert_string.format("matrix")
-        self._lnlike["matrix"] = lnlike
-
         nldSn = self._nld.model_nld(self.norm_pars.Sn[0])
         lnlikeD0 = LnlikeD0()
         D0_model = lnlikeD0.D0_from_nldSn(nldSn, **self.norm_pars.asdict())
@@ -110,6 +106,10 @@ class Interface:
         lnlike = lnlikeGg.lnlike(self.norm_pars.Gg)
         assert self.lnlike_above_cutoff(lnlike), assert_string.format("Gg")
         self._lnlike["Gg"] = lnlike
+
+        lnlike = lnlikefg.lnlike()
+        assert self.lnlike_above_cutoff(lnlike), assert_string.format("matrix")
+        self._lnlike["matrix"] = lnlike
 
         logger.debug(f"D0_model: {D0_model}")
         logger.debug(f"Gg_model: {Gg_model}")
