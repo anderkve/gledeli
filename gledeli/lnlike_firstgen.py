@@ -1,21 +1,36 @@
 import numpy as np
-from typing import Optional, Callable
+from typing import Optional, Callable, Union
 from scipy.ndimage import gaussian_filter1d
+import logging
 
 from ompy.decomposition import chisquare_diagonal
+from ompy.gauss_smoothing import gauss_smoothing_matrix_1D
 from ompy import Matrix, Vector, nld_T_product
+
+logger = logging.getLogger(__name__)
 
 
 class LnlikeFirstGen():
     """ Calculate lnlike for first generation matrix
+
+    Note:
+        The model observations can be smoothed using the `resolutionEx` and
+        `resolutionEg` keywords, smoothing the corresponding axis.
+        - The most realistic smoothing may be obtained with a energy dependent
+        FWHM (non-static kernel), which is given as a `np.ndarray`, where the
+        entry of a given bin is FWHM of the corresponding energy bin.
+        - To speed up, we can use provide a sinlge fwhm (static kernel), such
+        that we can use `scipy.gaussian_filter1d`, which is about 50 times
+        faster.
+        - If you provide `None`, no smoothing is applied.
 
     Attributes:
         nld: function providing the nld at the an input energy E
         gsf: function providing the gsf at the an input energy E
         matrix: experimental fg matrix
         matrix_std: experimental fg matrix uncertainty
-        resolutionEx: FWHM resolution of particle detector in (MEV)
-        resolutionEg: FWHM resolution of gamma-ray detector in (MEV)
+        resolutionEx: FWHM resolution of particle detector in (MeV).
+        resolutionEg: FWHM resolution of gamma-ray detector in (MeV).
     """
 
     def __init__(self, nld: Callable[[float], Vector],
@@ -64,18 +79,64 @@ class LnlikeFirstGen():
         model = Matrix(values=values, Ex=matrix.Ex, Eg=matrix.Eg)
 
         if self.resolutionEx is not None:
-            binsize = matrix.Ex[1] - matrix.Ex[0]
-            sigma = self.resolutionEx / 2.3548 / binsize
-            model.values = gaussian_filter1d(model.values, sigma, axis=0,
-                                             truncate=self._truncate)
+            self.smoothing(model, "Ex")
         if self.resolutionEg is not None:
-            binsize = matrix.Eg[1] - matrix.Eg[0]
-            sigma = self.resolutionEg / 2.3548 / binsize
-            model.values = gaussian_filter1d(model.values, sigma, axis=1,
-                                             truncate=self._truncate)
+            self.smoothing(model, "Eg")
 
         self._model = model
         return model
+
+    def smoothing(self, matrix: Matrix, axis: Union[int, str]):
+        """ Smoothing of matrix along axis. Operates inplace
+
+        Note:
+            see class docstring
+
+        Args:
+            matrix: input matrix
+            axis: Axis to smooth.
+        """
+        try:
+            axis = axis.lower()
+        except AttributeError:
+            pass
+
+        if axis in (0, 'ex'):
+            axis = "ex"
+            axis_int = 0
+        elif axis in (1, 'eg'):
+            axis = "eg"
+            axis_int = 1
+
+        fwhm = self.resolutionEx if axis == "ex" else self.resolutionEg
+        E = matrix.Ex if axis == "ex" else matrix.Eg
+
+        def smooth_constant_sigma():
+            binsize = E[1] - E[0]
+            sigma = fwhm / 2.3548 / binsize
+            matrix.values = gaussian_filter1d(matrix.values, sigma,
+                                              axis=axis_int,
+                                              truncate=self._truncate)
+
+        def smooth_nonconst_sigma():
+            matrix.values = \
+                gauss_smoothing_matrix_1D(matrix.values, E, fwhm,
+                                          axis=axis, truncate=self._truncate)
+
+        if fwhm is None:
+            logger.debug(f"{axis} axis not smoothed")
+            pass
+        elif isinstance(fwhm, float) or isinstance(fwhm, int):
+            logger.debug(f"{axis} axis smoothed with {fwhm:.4f}")
+            smooth_constant_sigma()
+        elif np.all(fwhm[0] == fwhm[:]):
+            fwhm = fwhm[0]
+            logger.debug(f"{axis} axis smoothed with {fwhm:.4f}")
+            smooth_constant_sigma()
+        else:
+            logger.debug(f"{axis} axis smoothed with {fwhm}")
+            smooth_nonconst_sigma()
+        return matrix
 
     def lnlike(self, matrix: Optional[Matrix] = None,
                matrix_std: Optional[Matrix] = None,
