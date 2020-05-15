@@ -36,10 +36,10 @@ std = mat.copy()
 std.values = np.sqrt(std.values)
 mat.values, norm = normalize_rows(mat.values)
 std.values = om.div0(std.values, norm)
-mat.plot(scale="log")
-std.plot(scale="log")
+mat.plot(scale="log", vmin=1e-3, vmax=1e-1)
+std.plot(scale="log", vmin=1e-3, vmax=1e-1)
 
 mat.save("firstgen.m")
 std.save("firstgen_std.m")
 
-# plt.show()
+plt.show()
