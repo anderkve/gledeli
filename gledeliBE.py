@@ -23,6 +23,7 @@ logging.basicConfig(stream=log_stream,
 # want to do once per scan, e.g. read experiment
 # data from file to memory.
 
+
 # initialize as this is not done from withing GAMBIT
 glede = ParametrizedInterface().set_settings()
 
