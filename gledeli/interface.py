@@ -57,12 +57,14 @@ class Interface:
         # save/calculate observation and models here
         self._matrix = None
         self._matrix_std = None
-        self._nld = None
-        self._createNLD = None
-        self._gsf = None
         self._lnlike: dict = None
 
         self.load_data(self.data_path)
+        self._nld = CreateNLD(data_path=self.data_path, pars=None)
+        self._gsf = CreateGSF(pars=None)
+        self._lnlikefg = LnlikeFirstGen(nld=None, gsf=None,
+                                        matrix=self._matrix,
+                                        matrix_std=self._matrix_std)
 
     def load_data(self, data_path):
         """ Load experimental data from datapath """
@@ -85,11 +87,14 @@ class Interface:
 
     def run(self):
         """ Run calculations """
-        self._nld = CreateNLD(data_path=self.data_path, pars=self.nld_pars)
-        self._gsf = CreateGSF(pars=self.gsf_pars)
-        lnlikefg = \
-            LnlikeFirstGen(nld=self._nld, gsf=self._gsf,
-                           matrix=self._matrix, matrix_std=self._matrix_std)
+        # set parameters
+        self._nld.pars = self.nld_pars
+        self._gsf.pars = self.gsf_pars
+
+        # provide nld and gsf model to first generation
+        self._lnlikefg.nld = self._nld
+        self._lnlikefg.gsf = self._gsf
+
         assert_string = "lnlike below cutoff for {}"
         self._lnlike = {}
 
@@ -107,7 +112,7 @@ class Interface:
         assert self.lnlike_above_cutoff(lnlike), assert_string.format("Gg")
         self._lnlike["Gg"] = lnlike
 
-        lnlike = lnlikefg.lnlike()
+        lnlike = self._lnlikefg.lnlike()
         assert self.lnlike_above_cutoff(lnlike), assert_string.format("matrix")
         self._lnlike["matrix"] = lnlike
 
