@@ -46,8 +46,6 @@ class LnlikeFirstGen():
         self.resolutionEg: Optional[float] = 0.1
         self._truncate: float = 2
 
-        self._model = None
-        pass
 
     def create(self) -> Matrix:
         """ Create first gen from model nld and gsf
@@ -83,7 +81,6 @@ class LnlikeFirstGen():
         if self.resolutionEg is not None:
             self.smoothing(model, "Eg")
 
-        self._model = model
         return model
 
     def smoothing(self, matrix: Matrix, axis: Union[int, str]):
@@ -146,14 +143,14 @@ class LnlikeFirstGen():
         Args:
             matrix (optional): Experimental matrix
             matrix_std (optional): Std. devs of experimental matrix
-            model (optional): Modelled matrix.
+            model (optional): Modelled matrix. If None, calculates it
+                via `self.create`.
 
         Returns:
             log-likelihood
         """
         matrix = self.matrix if matrix is None else matrix
         matrix_std = self.matrix_std if matrix_std is None else matrix_std
-        model = self._model if model is None else model
         if model is None:
             model = self.create()
 
