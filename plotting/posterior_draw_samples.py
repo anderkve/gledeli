@@ -9,9 +9,10 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import os
 import sys
-from typing import Dict, Union, Optional, Tuple
+from typing import Dict, Union, Optional, Tuple, Sequence
 from pathlib import Path
 from tqdm import tqdm
+from scipy.integrate import trapz
 
 gledelig_path = '../Backends/installed/gledeli/1.0'
 gledelig_path = Path(__file__).parent / gledelig_path
@@ -341,6 +342,56 @@ def plot_posterior_marginals(data: pd.DataFrame, key: str, ax=None, **kwargs):
     return fig, ax
 
 
+def bm1(df: Union[pd.DataFrame, Dict],
+        x: np.array = np.arange(0, 20, 0.005)) -> float:
+    """BM1 strength from gsf
+    see eq19 in PRC 98, 054310 (2018)
+
+    Note: Use trapz as integration as it is quite simple (less time consuming)
+
+    Args:
+        df: parameters
+        x: values to calculate samples for the integral
+
+    Returns:
+        B(M1) in μ_N^2
+    """
+    def fM1(x):
+        return CreateGSF.model_M1(x, df)
+    const = 2.5980e8  # 27(ħc)³/16π  in μ_N^2 MeV²
+    integral = trapz(fM1(x), x=x)
+    return const*integral
+
+
+def corner_plot(results: pd.DataFrame, n_samples: int = 10000,
+                exclude: Sequence[str] = None, **kwargs):
+    """ create cornerplot
+
+    Args:
+        results: parameters before eq. weighting
+        n_samples: number of sampels for corner plot (quickly becomes
+            very high memory consuption from matplotlib)
+        exclude : keys to exclude from cornerplot. Defaults to
+            (see sourcecode)
+    """
+    from corner import corner
+    if exclude is None:
+        exclude = ["p16", "p17", "p18", "p19",
+                   'posterior_weights', 'LogLike', 'LogLike_isvalid']
+    results_equal = results.sample(n=n_samples, weights="posterior_weights",
+                                   random_state=6548)
+    for item in exclude:
+        results_equal.pop(item)
+
+    kwargs.setdefault("quantiles", [0.16, 0.5, 0.84])
+    kwargs.setdefault("show_titles", True)
+    kwargs.setdefault("title_kwargs", {"fontsize": 12})
+    kwargs.setdefault("title_fmt", '.3f')
+    kwargs.setdefault("max_n_ticks", 4)
+    fig = corner(results_equal, labels=results_equal.columns, **kwargs)
+    return fig
+
+
 if __name__ == "__main__":
     data_path = (gledelig_path / "data").resolve()
     assert data_path.exists(), f"data path {data_path} does not exists"
@@ -358,8 +409,14 @@ if __name__ == "__main__":
     figdir = Path("figs/")
     figdir.mkdir(exist_ok=True)
 
+    print("loading results")
     hdfloader = HDFLoader()
     results, names = hdfloader.load(results_file)
+    print("finished")
+
+    results["B(M1)"] = results.apply(bm1, axis=1)
+    print("calculated BM1")
+
     # create equally weighted samples
     results_equal = results.sample(n=100, weights="posterior_weights",
                                    random_state=6548)
@@ -413,10 +470,17 @@ if __name__ == "__main__":
         if key in names["results"]:
             continue
         elif key in names["nld"]:
-            base = "nld"
+            base = "nld_"
         elif key in names["gsf"]:
-            base = "gsf"
+            base = "gsf_"
+        else:
+            base = "dependent_"
         fig, _ = plot_posterior_marginals(results, key, alpha=0.5)
-        fig.savefig(figdir / (f'{base}_{key}_posterior_hist.png'))
+        fig.savefig(figdir / (f'{base}{key}_posterior_hist.png'))
         plt.close(fig)
 
+    print("prepare corner plot")
+    fig = corner_plot(results)
+    fig.suptitle("random samples, equally weighted")
+    fig.savefig(figdir/"corner")
+    plt.close(fig)
