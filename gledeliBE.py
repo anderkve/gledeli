@@ -7,6 +7,13 @@ import numpy as np
 import logging
 from io import StringIO
 
+# Mock importing pymultinest  -- it's not needed but may cause problems
+import sys
+import mock
+MOCK_MODULES = ['pymultinest']
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = mock.Mock()
+
 from gledeli import Interface
 from ompy import NormalizationParameters
 from data.resolutionEg import f_fwhm_abs
