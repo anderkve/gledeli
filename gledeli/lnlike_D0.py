@@ -23,6 +23,7 @@ class LnlikeD0:
         """
 
         def nld_model_dummy(x):
+            """ Callable that return nld(Sn) in MeV^-1 """
             return nldSn
 
         D0 = NormalizerNLD.D0_from_nldSn(nld_model_dummy, **pars)
