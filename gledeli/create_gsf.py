@@ -12,20 +12,39 @@ class CreateGSF:
         pars: GSF parameters
     """
 
-    def __init__(self, pars: Dict, energy: Optional [np.array] = None):
+    def __init__(self, pars: Dict, energy: Optional[np.array] = None):
         self.pars = pars
         self.energy = energy
 
         self._gsf = None
 
-    def __call__(self, energy: Optional[np.array] = None):
+    def __call__(self, energy: Optional[np.array] = None, **kwargs):
         """ Wrapper for self.create """
-        return self.create(energy)
+        return self.create(energy, **kwargs)
 
-    def create(self, energy: Optional[np.array] = None) -> Vector:
-        """ Create the model """
+    def create(self, energy: Optional[np.array] = None,
+               kind: str = "total") -> Vector:
+        """Create the model
+
+        Args:
+            energy (optional): bla
+            kind: Elmag. type. Has to be in ["total", "tot", "sum", "E1",
+                "M1"]. The default is "total", and gives total/summed strength
+                function. Following kinds are equavalent: ["tot", "total",
+                "sum"].
+
+        Returns:
+            Vector: gsf
+        """
+        if kind in ["total", "tot", "sum"]:
+            model = self.model
+        elif kind == "E1":
+            model = self.model_E1
+        elif kind == "M1":
+            model = self.model_M1
+
         self.energy = self.energy if energy is None else energy
-        values = self.model(x=self.energy, pars=self.pars)
+        values = model(x=self.energy, pars=self.pars)
         gsf = Vector(values=values, E=self.energy)
         self._gsf = gsf
         return gsf
@@ -42,6 +61,11 @@ class CreateGSF:
             The input x value
         pars : dictionary {string:float}
             The parameter names and values for the given parameter point
+
+        Returns
+        -------
+        TYPE
+            Description
         """
         # Sum of E1 and M1 contribution
         y = CreateGSF.model_E1(x, pars) + CreateGSF.model_M1(x, pars)
