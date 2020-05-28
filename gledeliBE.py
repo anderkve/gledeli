@@ -2,21 +2,12 @@
 Minimal test interface for using GLEDELi from GAMBIT.
 """
 from collections import OrderedDict
-from pathlib import Path
 import numpy as np
 import logging
 from io import StringIO
 
-# Mock importing pymultinest  -- it's not needed but may cause problems
-import sys
-import mock
-MOCK_MODULES = ['pymultinest']
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.Mock()
+from settings import ParametrizedInterface
 
-from gledeli import Interface
-from ompy import NormalizationParameters
-from data.resolutionEg import f_fwhm_abs
 
 logger = logging.getLogger(__name__)
 log_stream = StringIO()
@@ -32,42 +23,8 @@ logging.basicConfig(stream=log_stream,
 # want to do once per scan, e.g. read experiment
 # data from file to memory.
 
-
-def init():
-    """ initiallization
-
-    TODO:
-        - set parameters outside source code, eg. import from a
-          parameters file
-        - call from parrent module?
-    """
-    current_file_path = Path(__file__).parent
-    data_path = Path(current_file_path / "data")
-    glede = Interface(data_path)
-
-    # set spincut parameters & exp. D0 / Gg values
-    norm_pars = NormalizationParameters(name="164Dy")
-    norm_pars.D0 = [6.8, 0.6]  # eV
-    norm_pars.Sn = [7.658, 0.001]  # MeV
-    norm_pars.Gg = [113., 13.]  # meV
-
-    norm_pars.spincutModel = 'Disc_and_EB05'
-    norm_pars.spincutPars = {"mass": 164, "NLDa": 18.12, "Eshift": 0.31,
-                             "Sn": norm_pars.Sn[0], "sigma2_disc": [1.5, 3.6]}
-    norm_pars.Jtarget = 5/2  # A-1 nucleus
-    norm_pars.steps = 100  # number of integration steps for Gg
-
-    glede.norm_pars = norm_pars
-
-    # set response from experiment
-    glede._lnlikefg.resolutionEg = f_fwhm_abs(glede._matrix.Eg)
-
-    glede.lnlike_cutoff = -5e5
-    return glede
-
 # initialize as this is not done from withing GAMBIT
-glede = init()
-
+glede = ParametrizedInterface().set_settings()
 
 def set_model_pars(pars):
     """
