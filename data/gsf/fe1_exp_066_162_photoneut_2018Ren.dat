@@ -1,0 +1,23 @@
+# fe1_exp_066_162_photoneut_2018Ren.dat                  
+#
+# Z = 66, A =162
+# No. of entries:   12
+# Col 1: photon energy E in MeV
+# Col 2: bin width dE in MeV
+# Col 3: dipole strength f1 in MeV^-3
+# Col 4: uncertainty df1 in MeV^-3
+# Format: 2f10.3, 2e13.3
+# Author:    (T.Renstrom, H.Utsunomiya, H.T.Nyhus, A.C.Larsen, M.Guttormsen et al., Phys.Rev.C98,054310,2018)                                                    
+#    E         dE       f1           df1
+     8.310     0.000    0.134E-06    0.286E-08
+     8.450     0.000    0.220E-06    0.499E-08
+     8.750     0.000    0.331E-06    0.922E-08
+     8.950     0.000    0.383E-06    0.116E-07
+     9.200     0.000    0.469E-06    0.148E-07
+     9.510     0.000    0.514E-06    0.174E-07
+    10.140     0.000    0.662E-06    0.246E-07
+    10.790     0.000    0.102E-05    0.355E-07
+    11.460     0.000    0.147E-05    0.533E-07
+    12.140     0.000    0.195E-05    0.720E-07
+    12.850     0.000    0.179E-05    0.670E-07
+    13.570     0.000    0.141E-05    0.534E-07

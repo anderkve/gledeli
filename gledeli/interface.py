@@ -10,6 +10,7 @@ from .create_gsf import CreateGSF
 from .lnlike_D0 import LnlikeD0
 from .lnlike_Gg import LnlikeGg
 from .lnlike_firstgen import LnlikeFirstGen
+from .lnlike_gsf_exp import LnlikeGSFexp
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +66,7 @@ class Interface:
         self._lnlikefg = LnlikeFirstGen(nld=None, gsf=None,
                                         matrix=self._matrix,
                                         matrix_std=self._matrix_std)
+        self._lnlikegsf_exp = LnlikeGSFexp()
 
     def load_data(self, data_path):
         """ Load experimental data from datapath """
@@ -115,6 +117,12 @@ class Interface:
         lnlike = self._lnlikefg.lnlike()
         assert self.lnlike_above_cutoff(lnlike), assert_string.format("matrix")
         self._lnlike["matrix"] = lnlike
+
+        self._lnlikegsf_exp.gsf = self._gsf
+        lnlike = self._lnlikegsf_exp.lnlike()
+        assert self.lnlike_above_cutoff(lnlike), \
+            assert_string.format("experimental gsf data")
+        self._lnlike["gsf_exp"] = lnlike
 
         logger.debug(f"D0_model: {D0_model}")
         logger.debug(f"Gg_model: {Gg_model}")
