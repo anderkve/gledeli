@@ -5,6 +5,7 @@ from collections import OrderedDict
 import numpy as np
 import logging
 from io import StringIO
+import re
 
 from settings import ParametrizedInterface
 
@@ -65,11 +66,13 @@ def run(settings):
         glede.run()
         success = True
     except Exception as inst:
-        if inst.args[0].startswith("lnlike below cutoff for"):
+        is_cutoff = re.match("lnlike: [+-]*[\d.]+(?:e[+-]?\d+)* below cutoff",
+                             inst.args[0])
+        if is_cutoff is None:
+            raise inst
+        else:
             logger.info(f"{inst.__class__.__name__}: {inst}")
             success = False
-        else:
-            raise inst
 
     # Construct a dict with info on how things went
     run_info = {}
