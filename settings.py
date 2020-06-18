@@ -43,8 +43,8 @@ class ParametrizedInterface:
 
     def set_settings(self):
         # set spincut parameters & exp. D0 / Gg values
-        norm_pars = NormalizationParameters(name="164Dy")
-        norm_pars.Sn = [7.658, 0.001]  # MeV
+        norm_pars = NormalizationParameters(name="162Dy")
+        norm_pars.Sn = [8.197, 0.001]  # MeV -- uncertainty not processed (?)
         self.glede.norm_pars = norm_pars
         self.set_exp_data_D0_Gg()
         self.set_spincut_parameters()
@@ -62,8 +62,8 @@ class ParametrizedInterface:
     def set_exp_data_D0_Gg(self):
         """ Set observables D0 and Gg (and target spin"""
         norm_pars = self.glede.norm_pars
-        norm_pars.D0 = [6.8, 0.6]  # eV
-        norm_pars.Gg = [113., 13.]  # meV
+        norm_pars.D0 = [2.4, 0.2]  # eV
+        norm_pars.Gg = [112., 10.]  # meV
         norm_pars.Jtarget = 5/2  # A-1 nucleus
 
     def set_spincut_parameters(self):
@@ -71,9 +71,9 @@ class ParametrizedInterface:
         norm_pars = self.glede.norm_pars
         assert norm_pars is not None, "Should be called after assigning Sn"
         norm_pars.spincutModel = 'Disc_and_EB05'
-        norm_pars.spincutPars = {"mass": 164, "NLDa": 18.12, "Eshift": 0.31,
+        norm_pars.spincutPars = {"mass": 162, "NLDa": 18.50, "Eshift": 0.39,
                                  "Sn": norm_pars.Sn[0],
-                                 "sigma2_disc": [1.5, 3.6]}
+                                 "sigma2_disc": [1.5, 3.7]}
         norm_pars.steps = 100  # number of integration steps for Gg
 
     def set_firstgen_experiments(self):
