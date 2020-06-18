@@ -15,7 +15,6 @@ class LnlikeGSFexp:
         self.gsf = gsf
         self.data: Optional[pd.DataFrame] = None
 
-
     def lnlike(self, data: Optional[pd.DataFrame] = None) -> float:
         """ Loglikelihood
 

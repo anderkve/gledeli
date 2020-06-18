@@ -4,7 +4,6 @@ from typing import Dict, Tuple, Union, Optional
 from ompy import NormalizationParameters
 import logging
 
-from .dataloader import DataLoader
 from .create_nld import CreateNLD
 from .create_gsf import CreateGSF
 from .lnlike_D0 import LnlikeD0
@@ -56,36 +55,14 @@ class Interface:
         self.lnlike_cutoff: float = None
 
         # save/calculate observation and models here
-        self._matrix = None
-        self._matrix_std = None
         self._lnlike: dict = None
 
-        self.load_data(self.data_path)
         self._nld = CreateNLD(data_path=self.data_path, pars=None)
         self._gsf = CreateGSF(pars=None)
-        self._lnlikefg = LnlikeFirstGen(nld=None, gsf=None,
-                                        matrix=self._matrix,
-                                        matrix_std=self._matrix_std)
         self._lnlikegsf_exp = LnlikeGSFexp()
 
-    def load_data(self, data_path):
-        """ Load experimental data from datapath """
-        dataloader = DataLoader(data_path)
-        self._matrix = dataloader.matrix
-        self._matrix_std = dataloader.matrix_std
-
-        # check that it's equally spaced
-        dEx = np.diff(self._matrix.Ex)
-        dEg = np.diff(self._matrix.Eg)
-        if not (np.allclose(dEx, dEx[0]) and np.allclose(dEg, dEg[0])):
-            raise NotImplementedError()
-
-        assert self._matrix_std.has_equal_binning(self._matrix)
-
-        if abs(self._matrix.values.sum() - len(self._matrix.Ex)) > 0.1:
-            raise NotImplementedError("Input matrix does not seem normalized "
-                                      "per Ex row. The current implementation "
-                                      "relies on this.")
+        # Needs to be initiated (and data loaded) before self.run()
+        self._lnlikefgs: Dict[str, LnlikeFirstGen] = None
 
     def run(self):
         """ Run calculations """
@@ -93,35 +70,35 @@ class Interface:
         self._nld.pars = self.nld_pars
         self._gsf.pars = self.gsf_pars
 
-        # provide nld and gsf model to first generation
-        self._lnlikefg.nld = self._nld
-        self._lnlikefg.gsf = self._gsf
-
-        assert_string = "lnlike below cutoff for {}"
+        err_msg = "lnlike: {:.2e} below cutoff for {}"
         self._lnlike = {}
 
         nldSn = self._nld.model_nld(self.norm_pars.Sn[0])
         lnlikeD0 = LnlikeD0()
         D0_model = lnlikeD0.D0_from_nldSn(nldSn, **self.norm_pars.asdict())
         lnlike = lnlikeD0.lnlike(self.norm_pars.D0)
-        assert self.lnlike_above_cutoff(lnlike), assert_string.format("D0")
+        assert self.lnlike_above_cutoff(lnlike), err_msg.format(lnlike, "D0")
         self._lnlike["D0"] = lnlike
 
         lnlikeGg = LnlikeGg()
         lnlikeGg.norm_pars = self.norm_pars
         Gg_model = lnlikeGg.Gg_standard(self._nld, self._gsf, D0_model)
         lnlike = lnlikeGg.lnlike(self.norm_pars.Gg)
-        assert self.lnlike_above_cutoff(lnlike), assert_string.format("Gg")
+        assert self.lnlike_above_cutoff(lnlike), err_msg.format(lnlike, "Gg")
         self._lnlike["Gg"] = lnlike
 
-        lnlike = self._lnlikefg.lnlike()
-        assert self.lnlike_above_cutoff(lnlike), assert_string.format("matrix")
-        self._lnlike["matrix"] = lnlike
+        assert self._lnlikefgs is not None, "Need to load fg matrix(es)"
+        for name, lnlikefg in self._lnlikefgs.items():
+            lnlikefg.set_pars(nld=self._nld, gsf=self._gsf)
+            lnlike = lnlikefg.lnlike()
+            assert self.lnlike_above_cutoff(lnlike), \
+                err_msg.format(lnlike, f"{name} fg matrix")
+            self._lnlike[f"{name} matrix"] = lnlike
 
         self._lnlikegsf_exp.gsf = self._gsf
         lnlike = self._lnlikegsf_exp.lnlike()
         assert self.lnlike_above_cutoff(lnlike), \
-            assert_string.format("experimental gsf data")
+            err_msg.format(lnlike, "experimental gsf data")
         self._lnlike["gsf_exp"] = lnlike
 
         logger.debug(f"D0_model: {D0_model}")

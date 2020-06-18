@@ -2,6 +2,7 @@ import numpy as np
 from typing import Optional, Callable, Union
 from scipy.ndimage import gaussian_filter1d
 import logging
+from pathlib import Path
 
 from ompy.decomposition import chisquare_diagonal
 from ompy.gauss_smoothing import gauss_smoothing_matrix_1D
@@ -33,19 +34,66 @@ class LnlikeFirstGen():
         resolutionEg: FWHM resolution of gamma-ray detector in (MeV).
     """
 
-    def __init__(self, nld: Callable[[float], Vector],
-                 gsf: Callable[[float], Vector],
-                 matrix: Matrix, matrix_std: Matrix):
+    def __init__(self, nld: Optional[Callable[[float], Vector]] = None,
+                 gsf: Optional[Callable[[float], Vector]] = None):
 
         self.nld = nld
         self.gsf = gsf
-        self.matrix = matrix
-        self.matrix_std = matrix_std
+
+        self.matrix: Optional[Matrix] = None
+        self.matrix_std: Optional[Matrix] = None
 
         self.resolutionEx: Optional[float] = 0.15
         self.resolutionEg: Optional[float] = 0.1
         self._truncate: float = 2
 
+    def load_exp(self, fnmat: Optional[Union[str, Path]] = 'firstgen.m',
+                 fnstd: Optional[Union[str, Path]] = 'firstgen_std.m'):
+        """ Load experimental data from disk
+
+        Note:
+            The data should already be trimmed to the aread we want to
+            compare to and is assumed to be normalized already.
+
+        Args :
+            fnmat: Path to first generation matrix
+            fnstd: Path to standard deviations matrix
+
+        Raises:
+            AssertionError: If fg matrix is not normalized to 1, and
+                Ex and Eg need equal binwidths (and linear spaced).
+
+        """
+        self.matrix = self.load_matrix(fname=fnmat)
+        self.matrix_std = self.load_matrix(fname=fnstd)
+
+        err_msg = "Fg matrix has to (be trimed) and normalized to 1."
+        np.testing.assert_allclose(self.matrix.values.sum(axis=1), 1,
+                                   err_msg=err_msg)
+
+        # check that it's equally spaced
+        dEx = np.diff(self.matrix.Ex)
+        dEg = np.diff(self.matrix.Eg)
+        if not (np.allclose(dEx, dEx[0]) and np.allclose(dEg, dEg[0])):
+            raise NotImplementedError()
+
+        assert self.matrix_std.has_equal_binning(self.matrix)
+
+    @staticmethod
+    def load_matrix(fname: Optional[Union[str, Path]] = 'firstgen.m'):
+        """ Load experimental matrix
+
+        Args:
+            fname: Filename, defaults to 'firstgen.m'
+        """
+        mat = Matrix(path=fname)
+        if mat.Eg[-1] > 1000:
+            logger.debug("Recalibrate matrix.Eg to MeV")
+            mat.Eg /= 1e3
+        if mat.Ex[-1] > 1000:
+            logger.debug("Recalibrate matrix.Ex to MeV")
+            mat.Ex /= 1e3
+        return mat
 
     def create(self) -> Matrix:
         """ Create first gen from model nld and gsf
@@ -160,3 +208,14 @@ class LnlikeFirstGen():
                                  matrix_std.values, resolution, matrix.Eg,
                                  matrix.Ex)
         return -0.5*chi
+
+    def set_pars(self, nld: Callable[[float], Vector],
+                 gsf: Callable[[float], Vector]):
+        """ Convenience function to set nld and gsf
+
+        Args:
+            nld: see instance attributes
+            gsf: see instance attributes
+        """
+        self.nld = nld
+        self.gsf = gsf

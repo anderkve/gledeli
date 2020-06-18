@@ -19,6 +19,7 @@ from ompy import NormalizationParameters
 
 from data.resolutionEg import f_fwhm_abs
 from gledeli import Interface
+from gledeli import LnlikeFirstGen
 
 logger = logging.getLogger(__name__)
 
@@ -52,11 +53,10 @@ class ParametrizedInterface:
         self.set_gsf_experiments()
 
         # set response from oslo-method experiment
-        assert self.glede._matrix is not None, "Data has to be loaded upfront"
-        self.glede._lnlikefg.resolutionEg = f_fwhm_abs(self.glede._matrix.Eg)
+        self.set_firstgen_experiments()
 
         # cutoff for calculations (TODO: grab from gambit)
-        self.glede.lnlike_cutoff = -5e5
+        self.glede.lnlike_cutoff = -5e6
         return self.glede
 
     def set_exp_data_D0_Gg(self):
@@ -75,6 +75,24 @@ class ParametrizedInterface:
                                  "Sn": norm_pars.Sn[0],
                                  "sigma2_disc": [1.5, 3.6]}
         norm_pars.steps = 100  # number of integration steps for Gg
+
+    def set_firstgen_experiments(self):
+        """ Set experimental first generation matrices """
+        base = self._data_path / "162Dy_oslo/export"
+
+        self.glede._lnlikefgs = {}
+
+        lnlikefg = LnlikeFirstGen()
+        lnlikefg.load_exp(fnmat=base / "1Gen_3He.m",
+                          fnstd=base / "1Gen_3He_std.m")
+        lnlikefg.resolutionEg = f_fwhm_abs(lnlikefg.matrix.Eg)
+        self.glede._lnlikefgs["3He"] = lnlikefg
+
+        lnlikefg = LnlikeFirstGen()
+        lnlikefg.load_exp(fnmat=base / "1Gen_4He.m",
+                          fnstd=base / "1Gen_4He_std.m")
+        lnlikefg.resolutionEg = f_fwhm_abs(lnlikefg.matrix.Eg)
+        self.glede._lnlikefgs["4He"] = lnlikefg
 
     def set_gsf_experiments(self):
         """ Set experimental gsf strength files """
