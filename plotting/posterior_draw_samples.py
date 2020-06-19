@@ -7,7 +7,6 @@ import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import os
 import sys
 from typing import Dict, Union, Optional, Tuple, Sequence
 from pathlib import Path
@@ -17,9 +16,9 @@ from scipy.integrate import trapz
 gledelig_path = '../'
 gledelig_path = Path(__file__).parent / gledelig_path
 sys.path.insert(0, str(gledelig_path.resolve()))
+from gledeliBE import glede  # load first to mock pymultinest # noqa
 from gledeli.create_nld import CreateNLD  # noqa
 from gledeli.create_gsf import CreateGSF  # noqa
-from gledeliBE import glede
 
 
 MIN_PYTHON = (3, 7)
@@ -152,6 +151,11 @@ def gsf_plot(df: pd.DataFrame, sort_by: Optional[str] = "posterior_weights",
         if i == n_samples:
             break
 
+    data = glede._lnlikegsf_exp.data
+    for name, group in data.groupby("label"):
+        ax.errorbar(x=group["x"], y=group["y"], yerr=group["yerr"], fmt="o",
+                    label=name, mfc="None", ms=5)
+
     ax.plot([], [], '-', color='k', label='samples, sum')
     ax.plot([], [], '--', color='b', label='samples, E1')
     ax.plot([], [], '--', color='g', label='samples, M1')
@@ -175,8 +179,9 @@ def compare_firstgen(pars: pd.DataFrame, ax=None):
         The figure and axis used.
     """
     if ax is None:
-        fig, ax = plt.subplots(2, 1, constrained_layout=True)
-        fig.set_size_inches(4, 6)
+        nexp = len(glede._lnlikefgs)
+        fig, ax = plt.subplots(2, nexp, constrained_layout=True)
+        fig.set_size_inches(4*nexp, 6)
     else:
         fig, ax = ax.figure, ax
 
@@ -190,29 +195,27 @@ def compare_firstgen(pars: pd.DataFrame, ax=None):
     # nld.pars = pars.to_dict()
     # gsf.pas = pars.to_dict()
 
-    # TODO Can have several input matrices now
-    # input_matrix
-    fg_creator = glede._lnlikefg["3He"]
-    fg_creator.nld = nld
-    fg_creator.gsf = gsf
-    input_matrix = fg_creator.matrix
+    for i, (name, fg_creator) in enumerate(glede._lnlikefgs.items()):
+        fg_creator.nld = nld
+        fg_creator.gsf = gsf
+        exp = fg_creator.matrix
 
-    model = fg_creator.create()
+        model = fg_creator.create()
 
-    input_matrix.plot(ax=ax[0], scale="log", vmin=1e-3, vmax=1e-1)
-    model.plot(ax=ax[1], scale="log", vmin=1e-3, vmax=1e-1)
+        exp.plot(ax=ax[i, 0], scale="log", vmin=1e-3, vmax=1e-1)
+        model.plot(ax=ax[i, 1], scale="log", vmin=1e-3, vmax=1e-1)
 
-    x = np.linspace(*ax[0].get_ylim())
-    ax[0].plot(x, x, "r--", label="E_x = E_g")
-    ax[1].plot(x, x, "r--", label="E_x = E_g")
+        x = np.linspace(*ax[i, 0].get_ylim())
+        ax[i, 0].plot(x, x, "r--", label="E_x = E_g")
+        ax[i, 1].plot(x, x, "r--", label="E_x = E_g")
 
-    ax[0].text(0.05, 0.05, r"(input)",
-               fontsize=plt.rcParams["axes.labelsize"],
-               transform=ax[0].transAxes)
+        ax[i, 0].text(0.05, 0.05, rf"(input: {name} exp.)",
+                      fontsize=plt.rcParams["axes.labelsize"],
+                      transform=ax[i, 0].transAxes)
 
-    ax[1].text(0.05, 0.05, r"(model)",
-               fontsize=plt.rcParams["axes.labelsize"],
-               transform=ax[1].transAxes)
+        ax[i, 1].text(0.05, 0.05, r"(model)",
+                      fontsize=plt.rcParams["axes.labelsize"],
+                      transform=ax[i, 1].transAxes)
     return fig, ax
 
 
