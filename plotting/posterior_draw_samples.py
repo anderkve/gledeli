@@ -14,13 +14,13 @@ from pathlib import Path
 from tqdm import tqdm
 from scipy.integrate import trapz
 
-gledelig_path = '../Backends/installed/gledeli/1.0'
+gledelig_path = '../'
 gledelig_path = Path(__file__).parent / gledelig_path
 sys.path.insert(0, str(gledelig_path.resolve()))
 from gledeli.create_nld import CreateNLD  # noqa
 from gledeli.create_gsf import CreateGSF  # noqa
-from gledeli.dataloader import DataLoader  # noqa
-from gledeli.lnlike_firstgen import LnlikeFirstGen  # noqa
+from gledeliBE import glede
+
 
 MIN_PYTHON = (3, 7)
 if sys.version_info < MIN_PYTHON:
@@ -181,13 +181,22 @@ def compare_firstgen(pars: pd.DataFrame, ax=None):
         fig, ax = ax.figure, ax
 
     data_path = "../Backends/installed/gledeli/1.0/data/"
-    dataloader = DataLoader(data_path)
-    input_matrix = dataloader.matrix
 
     nld = CreateNLD(pars=pars.to_dict(), data_path=data_path)
     gsf = CreateGSF(pars=pars.to_dict())
-    fg_creator = LnlikeFirstGen(nld=nld, gsf=gsf, matrix=input_matrix,
-                                matrix_std=None)
+
+    # nld = glede._nld
+    # gsf = glede._gsf
+    # nld.pars = pars.to_dict()
+    # gsf.pas = pars.to_dict()
+
+    # TODO Can have several input matrices now
+    # input_matrix
+    fg_creator = glede._lnlikefg["3He"]
+    fg_creator.nld = nld
+    fg_creator.gsf = gsf
+    input_matrix = fg_creator.matrix
+
     model = fg_creator.create()
 
     input_matrix.plot(ax=ax[0], scale="log", vmin=1e-3, vmax=1e-1)
