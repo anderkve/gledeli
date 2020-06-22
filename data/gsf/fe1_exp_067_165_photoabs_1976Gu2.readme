@@ -1,0 +1,62 @@
+#  fe1_exp_067_165_photoabs_1976Gu2.readme            
+#
+#  EXPERIMENTAL PHOTON STRENGTH FUNCTIONS (PSF) FOR GAMMA-ABSORPTION
+#
+#  EXFOR Subent =  M0056002
+#  Element = Ho   Z =  67   A = 165
+#
+#
+#
+#  PSF for gamma-absorption (f1(E)) were extracted from the
+#  photoabsorption/photo-neutron cross sections (CSa(E)) at
+#  different gamma-ray energies (E) from EXFOR database. 
+#  It was adopted, that CSa(Eg) corresponds to absorption of
+#  electric dipole gamma-rays: 
+#  f1(E)= CSa(E)/(3*E*(pi*hbar*c)^2).
+#
+#
+#  Subent information from EXFOR database
+#
+##ENTRY            M0056   20130524   20130823   20130819       M067
+#SUBENT        M0056001   20130524   20130823   20130819       M067
+#BIB                 13         31
+#TITLE      Width of giant resonance in the  absorption  for  the
+#            cross sections of gamma-rays by nuclei in the region
+#            150 < A < 200.
+#AUTHOR     (G.M.Gurevich,L.E.Lazareva,V.M.Mazur,G.V.Solodukhov)
+#INSTITUTE  (4RUSJIA)
+#REFERENCE  (J,ZEP,23,411,1976)
+#           (J,JEL,23,370,1976) - Eng.trans.of ZEP,23,411,1976
+#FACILITY   (SYNCH,4RUSJIA)
+#INC-SOURCE (BRST)
+#METHOD     (EXTB,SITA)
+#DETECTOR   (NAICR)
+#ANALYSIS    Measurement of g-quanta absorption in target.
+#ERR-ANALYS (ERR-S) Statistical errors only.
+#COMMENT    The curves   of   the  total  gamma-absorption  cross
+#            sections in the E1 giant resonance energy range  for
+#            the nuclei Ho-165,  Hf-178,  Hf-180,  Ta-181, W-182,
+#            Au-197 and  Bi-209  have  been  measured  using  the
+#            absorption method.
+#STATUS     (CURVE) Data from. Fig. 1.
+#HISTORY    (19840131C)
+#           (19910202A) Corrected by V.Varlamov, V.Mclane.
+#           (20020123A) Corrected by V.Varlamov:
+#            dates are   corrected   from   two  to  four  digits
+#            including that in reference and history,
+#            last line in M0056008 data table
+#                   30.25     168.        40.
+#            is deleted.
+#           (20121030U) SD: Updated to lower case.
+#                Corrected according last EXFOR rules and Dict.
+#                Ref. on transl. was added.  BIB update
+#           (20130524A) Corr. by V.Varlamov: ANALYSIS, REACTION.
+#ENDBIB              31
+#NOCOMMON             0          0
+#ENDSUBENT           34
+#SUBENT        M0056002   20130524   20130823   20130819       M067
+#BIB                  2          3
+#REACTION   (67-HO-165(G,TOT),,SIG)
+#HISTORY    (20130524A) Corrected by V.Varlamov:
+#            ABS -> TOT, BRA deleted.
+#ENDBIB               3

@@ -1,0 +1,73 @@
+#  fe1_exp_067_165_photoneut_1969Be8.readme           
+#
+#  EXPERIMENTAL PHOTON STRENGTH FUNCTIONS (PSF) FOR GAMMA-ABSORPTION
+#
+#  EXFOR Subent =  L0016020
+#  Element = Ho   Z =  67   A = 165
+#
+#
+#
+#  PSF for gamma-absorption (f1(E)) were extracted from the
+#  photoabsorption/photo-neutron cross sections (CSa(E)) at
+#  different gamma-ray energies (E) from EXFOR database. 
+#  It was adopted, that CSa(Eg) corresponds to absorption of
+#  electric dipole gamma-rays: 
+#  f1(E)= CSa(E)/(3*E*(pi*hbar*c)^2).
+#
+#
+#  Subent information from EXFOR database
+#
+##ENTRY            L0016     970129              20050926       0000
+#SUBENT        L0016001     970129              20050926       0000
+#BIB                  8         12
+#INSTITUTE  (1USALRL)
+#REFERENCE  (J,PR,185,1576,6909)
+#AUTHOR     (B.L.BERMAN,M.A.KELLY,R.L.BRAMBLETT,J.T.CALDWELL,
+#           H.S.DAVIS,S.C.FULTZ)
+#TITLE      Giant resonance in deformed nuclei, photoneutron
+#            cross sections for Eu153, Gd160, Ho165, and W186
+#FACILITY   (LINAC)
+#INC-SOURCE Positron annihilation
+#DETECTOR   (PROPC) Paraffin moderator with BF3 counters
+#HISTORY    (780511T) Converted from Berman compilation
+#           (891201A) BIB Updated
+#           (950407A) BIB Updated
+#ENDBIB              12
+#NOCOMMON             0          0
+#ENDSUBENT           15
+#SUBENT        L0016020     970129              20050926       0000
+#BIB                  2          3
+#REACTION   (67-HO-165(G,X)0-NN-1,UNW,SIG)
+#            The sum: (G,N)+(G,N+P)+(G,2N)+(G,2N+P)+(G,3N).
+#HISTORY    (950407C)
+#ENDBIB               3
+# E1 PSF were not given in the data file at E <  8.33 MeV;
+# where gamma-gamma scattering is over 10 % 
+# the following PSF values omitted in the data file
+#      E         dE       f1           df1
+#      8.168     0.000    0.492E-07    0.228E-07
+# E1 PSF were not given in the data file at E > 22.50 MeV;
+# where gamma-QD disintegration is over 10 % 
+# the following PSF values omitted in the data file
+#      E         dE       f1           df1
+#     22.724     0.000    0.223E-06    0.295E-07
+#     23.034     0.000    0.213E-06    0.202E-07
+#     23.343     0.000    0.194E-06    0.196E-07
+#     23.653     0.000    0.212E-06    0.195E-07
+#     23.963     0.000    0.209E-06    0.195E-07
+#     24.273     0.000    0.220E-06    0.192E-07
+#     24.582     0.000    0.189E-06    0.189E-07
+#     24.892     0.000    0.142E-06    0.187E-07
+#     25.202     0.000    0.133E-06    0.187E-07
+#     25.511     0.000    0.157E-06    0.173E-07
+#     25.821     0.000    0.160E-06    0.175E-07
+#     26.131     0.000    0.163E-06    0.176E-07
+#     26.440     0.000    0.133E-06    0.180E-07
+#     26.750     0.000    0.134E-06    0.184E-07
+#     27.060     0.000    0.145E-06    0.191E-07
+#     27.370     0.000    0.100E-06    0.213E-07
+#     27.679     0.000    0.968E-07    0.231E-07
+#     27.989     0.000    0.141E-06    0.175E-07
+#     28.299     0.000    0.142E-06    0.265E-07
+#     28.608     0.000    0.706E-07    0.294E-07
+#     28.918     0.000    0.235E-07    0.369E-07

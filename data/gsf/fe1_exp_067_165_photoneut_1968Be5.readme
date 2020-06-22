@@ -1,0 +1,67 @@
+#  fe1_exp_067_165_photoneut_1968Be5.readme           
+#
+#  EXPERIMENTAL PHOTON STRENGTH FUNCTIONS (PSF) FOR GAMMA-ABSORPTION
+#
+#  EXFOR Subent =  L0012020
+#  Element = Ho   Z =  67   A = 165
+#
+#
+#
+#  PSF for gamma-absorption (f1(E)) were extracted from the
+#  photoabsorption/photo-neutron cross sections (CSa(E)) at
+#  different gamma-ray energies (E) from EXFOR database. 
+#  It was adopted, that CSa(Eg) corresponds to absorption of
+#  electric dipole gamma-rays: 
+#  f1(E)= CSa(E)/(3*E*(pi*hbar*c)^2).
+#
+#
+#  Subent information from EXFOR database
+#
+##ENTRY            L0012     970129   20050616   20050926       0000
+#SUBENT        L0012001     970129   20050616   20050926       0000
+#BIB                  8         10
+#INSTITUTE  (2FR SAC)
+#REFERENCE  (J,NP/A,121,463,6807)
+#AUTHOR     (R.BERGERE,H.BEIL,A.VEYSSIERE)
+#TITLE      Photoneutron cross sections of La, Tb, Ho and Ta.
+#FACILITY   (LINAC)
+#INC-SOURCE Positron annihilation
+#DETECTOR   (STANK) Gd-loaded liquid scinttilator
+#HISTORY    (780511T)Converted from Berman compilation
+#           (891205A) BIB UPDATE
+#           (950403A) BIB UPDATE
+#ENDBIB              10
+#NOCOMMON             0          0
+#ENDSUBENT           13
+#SUBENT        L0012020     970129   20050616   20050926       0000
+#BIB                  2          3
+#REACTION   (67-HO-165(G,X)0-NN-1,UNW,SIG)
+#            The sum: (G,N)+(G,N+P)+(G,2N)+(G,2N+P)+(G,3N).
+#HISTORY    (950403C)
+#ENDBIB               3
+# E1 PSF were not given in the data file at E <  8.33 MeV;
+# where gamma-gamma scattering is over 10 % 
+# the following PSF values omitted in the data file
+#      E         dE       f1           df1
+#      7.260     0.000    0.143E-07    0.597E-07
+#      7.530     0.000    0.184E-07    0.594E-07
+#      7.800     0.000    0.545E-07    0.590E-07
+#      8.080     0.000    0.170E-06    0.587E-07
+# E1 PSF were not given in the data file at E > 22.50 MeV;
+# where gamma-QD disintegration is over 10 % 
+# the following PSF values omitted in the data file
+#      E         dE       f1           df1
+#     22.760     0.000    0.257E-06    0.427E-07
+#     23.040     0.000    0.312E-06    0.425E-07
+#     23.310     0.000    0.302E-06    0.420E-07
+#     23.580     0.000    0.262E-06    0.419E-07
+#     23.850     0.000    0.232E-06    0.415E-07
+#     24.120     0.000    0.276E-06    0.414E-07
+#     24.400     0.000    0.198E-06    0.412E-07
+#     24.670     0.000    0.177E-06    0.408E-07
+#     24.940     0.000    0.186E-06    0.407E-07
+#     25.210     0.000    0.987E-07    0.403E-07
+#     25.480     0.000    0.134E-06    0.402E-07
+#     25.760     0.000    0.102E-06    0.397E-07
+#     26.300     0.000    0.544E-07    0.392E-07
+#     26.840     0.000    0.391E-07    0.388E-07

@@ -1,0 +1,40 @@
+#  fe1_exp_067_165_photoneut_1966Axe.readme           
+#
+#  EXPERIMENTAL PHOTON STRENGTH FUNCTIONS (PSF) FOR GAMMA-ABSORPTION
+#
+#  EXFOR Subent =  M0844003
+#  Element = Ho   Z =  67   A = 165
+#
+#
+#
+#  PSF for gamma-absorption (f1(E)) were extracted from the
+#  photoabsorption/photo-neutron cross sections (CSa(E)) at
+#  different gamma-ray energies (E) from EXFOR database. 
+#  It was adopted, that CSa(Eg) corresponds to absorption of
+#  electric dipole gamma-rays: 
+#  f1(E)= CSa(E)/(3*E*(pi*hbar*c)^2).
+#
+#
+#  Subent information from EXFOR database
+#
+##ENTRY            M0844   20120423   20120906   20120709       M063
+#SUBENT        M0844001   20120423   20120906   20120709       M063
+#BIB                  9          9
+#TITLE      Etude de la deformation du noyau d'Holmium.
+#AUTHOR     (P.Axel,J.Miller,C.Schuhl.G.Tamas,C.Tzara)
+#INSTITUTE  (2FR SAC)
+#REFERENCE  (J,JPR,27,262,1966) in French.
+#FACILITY   (LINAC,2FR SAC)
+#INC-SOURCE (QMPH,ARAD) Annihilation in flight of fast positrons.
+#DETECTOR   (BF3) BF3 detectors.
+#SAMPLE     Natural Holmium target (Ho2O3), 894 g, 5.13 g/cm**2.
+#HISTORY    (20120423C)
+#ENDBIB               9
+#NOCOMMON             0          0
+#ENDSUBENT           12
+#SUBENT        M0844003   20120423   20120906   20120709       M063
+#BIB                  3          3
+#REACTION   (67-HO-165(G,X)0-NN-1,UNW,SIG)
+#STATUS     (CURVE) Data taken from Fig. 5
+#ERR-ANALYS (ERR-S) Statistical errors.
+#ENDBIB               3

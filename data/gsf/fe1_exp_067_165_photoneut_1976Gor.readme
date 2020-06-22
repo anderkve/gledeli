@@ -1,0 +1,63 @@
+#  fe1_exp_067_165_photoneut_1976Gor.readme           
+#
+#  EXPERIMENTAL PHOTON STRENGTH FUNCTIONS (PSF) FOR GAMMA-ABSORPTION
+#
+#  EXFOR Subent =  M0057006
+#  Element = Ho   Z =  67   A = 165
+#
+#
+#
+#  PSF for gamma-absorption (f1(E)) were extracted from the
+#  photoabsorption/photo-neutron cross sections (CSa(E)) at
+#  different gamma-ray energies (E) from EXFOR database. 
+#  It was adopted, that CSa(Eg) corresponds to absorption of
+#  electric dipole gamma-rays: 
+#  f1(E)= CSa(E)/(3*E*(pi*hbar*c)^2).
+#
+#
+#  Subent information from EXFOR database
+#
+##ENTRY            M0057   20101118   20110216   20110117       M055
+#SUBENT        M0057001   20101118   20110216   20110117       M055
+#BIB                 14         23
+#TITLE      Giant resonance in strongly deformed nuclei Tb-159,
+#           HO-165, ER-166, AND HF-178.
+#AUTHOR     (B.I.GORYACHEV,YU.V.KUZNETSOV,V.N.ORLIN,
+#           N.A.POZHIDAEVA,V.G.SHEVCHENKO)
+#INSTITUTE  (4RUSMOS)
+#REFERENCE  (J,YF,23,1145,1976)
+#           (J,SNP,23,609,1977)
+#FACILITY   (BETAT,4RUSMOS)
+#INC-SOURCE (BRST)
+#METHOD     (EXTB,SITA)
+#PART-DET   (N)
+#COMMENT    Photoneutron cross sections were measured
+#           for nuclei Tb-159, Ho-165, Er-166, Hf-178.
+#DETECTOR   (BF3)
+#ANALYSIS   (UNFLD,PLA)
+#ERR-ANALYS (DATA-ERR) Root-mean-squared uncertainties.
+#STATUS     (CURVE)
+#HISTORY    (19831208C)
+#           (19910202A) Corrected by V.Varlamov, V.Mclane
+#           (20101118A) Corrected by V.Varlamov:  datas,  ERR-S ->
+#            DATA-ERR, BRA -> BRS,  REACTIONs  in  SUBENTs  002  -
+#            004, 006, 007, 009, 010, 012, title, STATUS added in
+#            SUBENTs 002, 005, 006, 008, 009, 011, 012, lowercase.
+#ENDBIB              23
+#NOCOMMON             0          0
+#ENDSUBENT           26
+#SUBENT        M0057006   20101118   20110216   20110117       M055
+#BIB                  2          5
+#REACTION   (67-HO-165(G,X)0-NN-1,UNW,SIG,,BRS,DERIV)
+#           Cross section of the (g,sn) = (g,n) + (g,2n) + ...
+#            reaction.
+#STATUS     (DEP,M0057004) Cross section of the (g,xn) reaction.
+#           (DEP,M0057005) Cross section of the (g,2n) reaction.
+#ENDBIB               5
+# E1 PSF were not given in the data file at E <  8.33 MeV;
+# where gamma-gamma scattering is over 10 % 
+# the following PSF values omitted in the data file
+#      E         dE       f1           df1
+#      8.100     0.000    0.107E-06    0.000E+00
+#      8.200     0.000    0.169E-06    0.000E+00
+#      8.300     0.000    0.209E-06    0.000E+00

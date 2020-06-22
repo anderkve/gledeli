@@ -1,0 +1,60 @@
+#  fe1_exp_067_165_photoabs_1981Gur.readme            
+#
+#  EXPERIMENTAL PHOTON STRENGTH FUNCTIONS (PSF) FOR GAMMA-ABSORPTION
+#
+#  EXFOR Subent =  M0073004
+#  Element = Ho   Z =  67   A = 165
+#
+#
+#
+#  PSF for gamma-absorption (f1(E)) were extracted from the
+#  photoabsorption/photo-neutron cross sections (CSa(E)) at
+#  different gamma-ray energies (E) from EXFOR database. 
+#  It was adopted, that CSa(Eg) corresponds to absorption of
+#  electric dipole gamma-rays: 
+#  f1(E)= CSa(E)/(3*E*(pi*hbar*c)^2).
+#
+#
+#  Subent information from EXFOR database
+#
+##ENTRY            M0073   20170330   20170607   20170607       M088
+#SUBENT        M0073001   20170330   20170607   20170607       M088
+#BIB                 13         28
+#TITLE      Total nuclear photoabsorption cross sections
+#            in the region 150 < A < 190.
+#AUTHOR     (G.M.Gurevich,L.E.Lazareva,V.M.Mazur,
+#           S.Yu.Merkulov,G.V.Solodukhov,V.A.Tyutin)
+#INSTITUTE  (4RUSJIA)
+#REFERENCE  (J,NP/A,351,257,1981)
+#           #doi:10.1016/0375-9474(81)90443-7
+#FACILITY   (SYNCH,4RUSJIA)
+#INC-SOURCE (BRST)
+#METHOD     (EXTB,SITA,TRN)
+#DETECTOR   (NAICR)
+#ERR-ANALYS (ERR-S) Statistical errors only.
+#REL-REF    (R,,L.Storm+,J,ND/A,7,565,1970)
+#           Atomic cross section used in subtraction.
+#STATUS     (CURVE) Data from Fig. 2.
+#COMMENT    The total gamma-absorption cross sections in the
+#            E1 giant resonance energy range for the nuclei
+#            Sm-154, Gd-156, Ho-165, Er-168, Yb-174, Hf-178,
+#            Hf-180, Ta-181, W-182 W-184, W-186, Au-197 have
+#            been measured using the absorption method.
+#HISTORY    (19831208C)
+#           (19910202A) Corrected by V.Varlamov, V.McLane
+#           (20101216A) Corrected    by     V.Varlamov:  REACTION,
+#            REFERENCE, ERR-ANALYS, BRA -> BRS.
+#           (20111117A) Corrected by V.Varlamov: Dates, doi,
+#            4CCP -> 4RUS, COMMENT, REL-REF, BRA, lowercase.
+#           (20170330A) Corrected by V.Varlamov: REACTION,
+#            the HISTORY line (20101216A) added.
+#ENDBIB              28
+#NOCOMMON             0          0
+#ENDSUBENT           31
+#SUBENT        M0073004   20170331   20170607   20170607       M088
+#BIB                  2          4
+#REACTION   (67-HO-165(G,ABS),,SIG)
+#HISTORY    (20101216A) Corrected by V.Varlamov: BRA -> BRS.
+#           (20170330A) Corrected by V.Varlamov: BRS deleted,
+#            the HISTORY line (20101216A) added.
+#ENDBIB               4

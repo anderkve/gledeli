@@ -30,6 +30,7 @@ class ParametrizedInterface:
     Attributes:
         glede: Inface of GLEDELi
     """
+
     def __init__(self):
         """
         TODO:
@@ -64,7 +65,7 @@ class ParametrizedInterface:
         norm_pars = self.glede.norm_pars
         norm_pars.D0 = [2.4, 0.2]  # eV
         norm_pars.Gg = [112., 10.]  # meV
-        norm_pars.Jtarget = 5/2  # A-1 nucleus
+        norm_pars.Jtarget = 5 / 2  # A-1 nucleus
 
     def set_spincut_parameters(self):
         """ Set spincut paramters for oslo-method type analysis """
@@ -97,13 +98,31 @@ class ParametrizedInterface:
     def set_gsf_experiments(self):
         """ Set experimental gsf strength files """
         base = self._data_path
-        gsf_data = [GSFFile(base/"gsf"/"fe1_exp_066_162_photoneut_2018Ren.dat",
-                            kind="E1", label="Renstrøm2018 et al."), ]
+        renstr_label = "Renstrøm2018 et al. > 8.5 MeV"
+        gsf_data = \
+            [GSFFile(base / "gsf" / "fe1_exp_066_162_photoneut_2018Ren.dat",
+                     kind="E1", label=renstr_label),
+             # GSFFile(base / "gsf" / "fe1_exp_067_165_photoabs_1981Gur.dat",
+             #         kind="E1"),
+             # GSFFile(base / "gsf" / "fe1_exp_067_165_photoneut_1966Axe.dat",
+             #         kind="E1"),
+             # GSFFile(base / "gsf" / "fe1_exp_067_165_photoneut_1969Be8.dat",
+             #         kind="E1"),
+             # GSFFile(base / "gsf" / "fe1_exp_067_165_photoneut_1976Gor.dat",
+             #         kind="E1"),
+             GSFFile(base / "gsf" / "fe1_exp_067_165_photoneut_2019Sub.dat",
+                     kind="E1"),
+             ]
         dfs = [gsf.load() for gsf in gsf_data]
         df = pd.concat(dfs)
         df.set_index(["kind", "label"], inplace=True)
         if any(df["xerr"] != 0):
             raise NotImplementedError()
+
+        df_renstr = df.loc[("E1", renstr_label)]
+        df_renstr[df_renstr.x < 8.5] = np.nan
+        df.dropna(inplace=True)
+
         self.glede._lnlikegsf_exp.data = df
 
 
@@ -112,7 +131,7 @@ class GSFFile:
     """ Class for keeping track of an item in inventory. """
     fname: Union[str, Path]
     kind: str
-    label: Optional[str]
+    label: Optional[str] = None
 
     def __post_init__(self):
         self.fname = Path(self.fname)
