@@ -103,6 +103,8 @@ class Interface:
 
         logger.debug(f"D0_model: {D0_model}")
         logger.debug(f"Gg_model: {Gg_model}")
+        self.D0_model = D0_model
+        self.Gg_model = Gg_model
 
     def lnlike_above_cutoff(self, lnlike: float) -> bool:
         """ Check if lnlike is above `self.lnlike_cutoff`

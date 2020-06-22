@@ -95,7 +95,8 @@ def get_results():
     # Get log-likelihoods and any other numbers we want to save
     results = {}
     results["loglike"] = glede.get_loglike()
-    results["some_other_number"] = 3.1415
+    results["D0_model"] = glede.D0_model
+    results["Gg_model"] = glede.Gg_model
 
     return results
 
