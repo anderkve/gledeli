@@ -90,10 +90,15 @@ class HDFLoader:
     @staticmethod
     def hdf5_results_pars(group: h5py._hl.group.Group) -> dict:
         data = {}
-        data['posterior_weights'] = np.array(group["Posterior"])
         data['LogLike'] = np.array(group["LogLike"])
         data['LogLike_isvalid'] = np.array(group["LogLike_isvalid"],
                                            dtype=bool)
+        try:
+            data['posterior_weights'] = np.array(group["Posterior"])
+        except KeyError:
+            # TODO: what is the "actual" values it should be filled with?
+            print("replacing posterior weights [missing key] with ones")
+            data['posterior_weights'] = np.ones_like(data["LogLike"])
         return data
 
 
@@ -432,6 +437,7 @@ if __name__ == "__main__":
     # create equally weighted samples
     results_equal = results.sample(n=100, weights="posterior_weights",
                                    random_state=6548)
+    results_equal["posterior_weights"] = 1
 
     # gsf plots
     fig, ax = gsf_plot(results)
