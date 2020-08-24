@@ -51,6 +51,9 @@ class ParametrizedInterface:
         self.set_spincut_parameters()
 
         # get experimental gsf data
+        self.set_nld_model()
+
+        # get experimental gsf data
         self.set_gsf_experiments()
 
         # set response from oslo-method experiment
@@ -72,10 +75,18 @@ class ParametrizedInterface:
         norm_pars = self.glede.norm_pars
         assert norm_pars is not None, "Should be called after assigning Sn"
         norm_pars.spincutModel = 'Disc_and_EB05'
-        norm_pars.spincutPars = {"mass": 162, "NLDa": 18.50, "Eshift": 0.39,
+        # workaround in mass to get rigid moment of innertia like in Renst18
+        norm_pars.spincutPars = {"mass": 162*(0.9)**(3/5), "NLDa": 18.50,
+                                 "Eshift": 0.39,
                                  "Sn": norm_pars.Sn[0],
-                                 "sigma2_disc": [1.5, 3.7]}
+                                 "sigma2_disc": [1.5, 3.7**2]}
         norm_pars.steps = 100  # number of integration steps for Gg
+
+    def set_nld_model(self):
+        """ Sets additional parameters for nld model """
+        # not necessary for CT model
+        self.glede._nld.model = "bsfg_and_discrete"
+        self.glede._nld.spin_pars = self.glede.norm_pars
 
     def set_firstgen_experiments(self):
         """ Set experimental first generation matrices """

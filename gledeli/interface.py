@@ -69,11 +69,14 @@ class Interface:
         # set parameters
         self._nld.pars = self.nld_pars
         self._gsf.pars = self.gsf_pars
+        # Don't update Eshift for CT model (diff. shift in spincut and NLD)
+        if self._nld.model == "bsfg_and_discrete":
+            self.update_norm_pars(self.nld_pars)
 
         err_msg = "lnlike: {:.2e} below cutoff for {}"
         self._lnlike = {}
 
-        nldSn = self._nld.model_nld(self.norm_pars.Sn[0])
+        nldSn = self._nld.create(self.norm_pars.Sn[0])
         lnlikeD0 = LnlikeD0()
         D0_model = lnlikeD0.D0_from_nldSn(nldSn, **self.norm_pars.asdict())
         lnlike = lnlikeD0.lnlike(self.norm_pars.D0)
@@ -105,6 +108,12 @@ class Interface:
         logger.debug(f"Gg_model: {Gg_model}")
         self.D0_model = D0_model
         self.Gg_model = Gg_model
+
+    def update_norm_pars(self, pars):
+        """ Update spin parameters from self.norm_pars from pars """
+        for key in self.norm_pars.spincutPars:
+            if key in self.nld_pars:
+                self.norm_pars.spincutPars[key] = self.nld_pars[key]
 
     def lnlike_above_cutoff(self, lnlike: float) -> bool:
         """ Check if lnlike is above `self.lnlike_cutoff`

@@ -103,23 +103,67 @@ def get_results():
 
 if __name__ == "__main__":
     # run with these parameters
-    glede.nld_pars = {"T": 0.56, "Eshift": -0.31,
-                      "Ecrit": 2.0}
+    # glede.nld_pars = {"T": 0.61, "Eshift": -1.02,
+    #                   "Ecrit": 2.3}
+    glede.nld_pars = {"NLDa": 17, "Eshift": 0.30,
+                      "Ecrit": 1.98}
     gsf_pars = {}
     gsf_pars['p1'], gsf_pars['p2'], gsf_pars['p3'] = np.array([12.68, 236., 3.])  # noqa
     gsf_pars['p4'], gsf_pars['p5'], gsf_pars['p6'] = np.array([15.2,  175., 2.2]) # noqa
-    gsf_pars['p7'], gsf_pars['p8'], gsf_pars['p9'] = np.array([6.33, 4.3, 1.9])
-    gsf_pars['p10'], gsf_pars['p11'], gsf_pars['p12'] = np.array([10.6, 30., 5.])
-    gsf_pars['p13'], gsf_pars['p14'], gsf_pars['p15'] = np.array([2.86, 0.69, 0.69]) # noqa
-    gsf_pars['p20'] = 0.6
+    gsf_pars['p7'], gsf_pars['p8'], gsf_pars['p9'] = np.array([6.42, 4.2, 1.9])
+    gsf_pars['p10'], gsf_pars['p11'], gsf_pars['p12'] = np.array([10.6, 30., 4.9])
+    gsf_pars['p13'], gsf_pars['p14'], gsf_pars['p15'] = np.array([2.81, 0.54, 0.76]) # noqa
+    gsf_pars['p20'] = 0.61
 
     glede.gsf_pars = gsf_pars
 
-    glede.run()
+    try:
+        glede.run()
+        success = True
+    except Exception as inst:
+        is_cutoff = re.match("lnlike: [+-]*[\d.]+(?:e[+-]?\d+)* below cutoff",
+                             inst.args[0])
+        print("asdasd", is_cutoff)
+        if is_cutoff is None:
+            raise inst
+        else:
+            logger.info(f"{inst.__class__.__name__}: {inst}")
+            success = False
+
     print(log_stream.getvalue())
     log_stream.seek(0)
     log_stream.truncate(0)
 
     print("\n Give me a break")
-    glede.run()
+    try:
+        glede.run()
+        success = True
+    except Exception as inst:
+        is_cutoff = re.match("lnlike: [+-]*[\d.]+(?:e[+-]?\d+)* below cutoff",
+                             inst.args[0])
+        print("asdasd", is_cutoff)
+        if is_cutoff is None:
+            raise inst
+        else:
+            logger.info(f"{inst.__class__.__name__}: {inst}")
+            success = False
+
+
+    import matplotlib.pyplot as plt
+    for name, lnlike in glede._lnlikefgs.items():
+        lnlike.matrix.plot(vmin=1e-3, vmax=1e-1, scale="log")
+        lnlike.create().plot(vmin=1e-3, vmax=1e-1, scale="log")
+        print(name)
+        print(lnlike.matrix.Ex[0], lnlike.matrix.Ex[-1], lnlike.matrix.Eg[0],
+              lnlike.matrix.Eg[-1])
+
+    # data = glede._lnlikegsf_exp.data
+    # data["rel_err"] = data["yerr"]/data["y"]
+    # print(data)
+
+    print("results:", get_results())
+
+
     print(log_stream.getvalue())
+
+    plt.show()
