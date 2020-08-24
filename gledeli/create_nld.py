@@ -94,7 +94,10 @@ class CreateNLD:
             levels_dists = discrete[-1] * floor_to_Ecrit
             width_Ecrit = self.energy[ibin_last+1] - self.energy[ibin_last]
             levels_model = model[0] * width_Ecrit * (1-floor_to_Ecrit)
-            density_Ecrit = (levels_dists + levels_model) / width_Ecrit
+            if bin_edges_discrete[-1] == self.pars['Ecrit']:
+                density_Ecrit = levels_model / width_Ecrit
+            else:
+                density_Ecrit = (levels_dists + levels_model) / width_Ecrit
 
             # combine replacing Ecrit by the found value above
             combined = np.zeros_like(self.energy)
