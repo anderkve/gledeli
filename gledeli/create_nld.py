@@ -29,7 +29,7 @@ class CreateNLD:
     discrete_level_energies: Optional[np.ndarray] = None
 
     def __init__(self, data_path: Union[str, Path], pars: Dict,
-                 energy: Optional[np.array] = None,
+                 energy: Optional[np.ndarray] = None,
                  model: str = "ct_and_discrete"):
         self.data_path = Path(data_path)
         self.pars = pars
@@ -43,11 +43,11 @@ class CreateNLD:
         if type(self).discrete_level_energies is None:
             self.load_discrete_file(self.data_path)
 
-    def __call__(self, energy: Optional[np.array] = None):
+    def __call__(self, energy: Optional[np.ndarray] = None):
         """ Wrapper for self.create """
         return self.create(energy)
 
-    def create(self, energy: Optional[np.array] = None
+    def create(self, energy: Optional[np.ndarray] = None
                ) -> Union[float, Vector]:
         """ Create the nld combination
 
@@ -65,7 +65,7 @@ class CreateNLD:
         return nld
 
     def model_and_discrete(self,
-                           energy: Optional[np.array] = None
+                           energy: Optional[np.ndarray] = None
                            ) -> Union[float, Vector]:
         """ Create the nld from the selected model and discrete states
 
@@ -80,6 +80,7 @@ class CreateNLD:
             model_nld: float if energy is float, else Vector
         """
         self.energy = self.energy if energy is None else energy
+        energy = self.energy
 
         if isinstance(energy, np.ndarray):
             # calclate bin edges appart from the last one
@@ -195,7 +196,10 @@ class CreateNLD:
         """ Create model nld from BSFG model, with low energy fix
 
         Low energy fix from EB05, see Eq. (3) and text below it.
-        Alternative from is presented eg. in RIPL3, see eq. (48)
+        Alternative from is presented eg. in RIPL3, see eq. (48).
+
+        Note that we use a different convention for U and the excitation energy
+        than in EB05.
 
         Args:
             energy: energy grid on which the nld model is calculated
@@ -209,12 +213,14 @@ class CreateNLD:
         energy = np.atleast_1d(energy)
         U = energy - Eshift
         # fix for low energies
-        U = np.where(energy < (25/16)/a, (25/16)/a, U)
+        U = np.where(U < (25/16)/a, (25/16)/a, U)
 
         nom = np.exp(2*np.sqrt(a*U))
         denom = 12 * np.sqrt(2) * sigma * a**(1/4) * U**(5/4)
         nld = nom / denom
 
+        assert np.isfinite(nld).all(), \
+            f"Some values in nld are not finite: {nld}"
         return nld
 
     def bin_edges_discrete(self):
