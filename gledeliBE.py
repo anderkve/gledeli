@@ -27,6 +27,16 @@ logging.basicConfig(stream=log_stream,
 # initialize as this is not done from withing GAMBIT
 glede = ParametrizedInterface().set_settings()
 
+
+def set_model_names(model_names):
+    """
+    Dummy function that demonstrates how to get the names
+    of active models from GAMBIT
+    """
+    for name in model_names:
+        print("gledeliBE: Got model name:", name)
+
+
 def set_model_pars(pars):
     """
     Communicate model parameters from GAMBIT to GLEDELi
