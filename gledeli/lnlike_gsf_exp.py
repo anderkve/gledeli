@@ -35,4 +35,4 @@ class LnlikeGSFexp:
             assert model is not None
             diff = (model(exp["x"]) - exp["y"])/exp["yerr"]
             chi2 += np.sum(diff**2)
-        return -0.5 * chi2
+        return np.asscalar(-0.5 * chi2)

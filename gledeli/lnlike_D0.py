@@ -1,6 +1,6 @@
 from typing import Tuple, Optional
 from ompy.normalizer_nld import NormalizerNLD
-
+import numpy as np
 
 class LnlikeD0:
     """ Calculate lnlike for D0 or nld(Sn)
@@ -44,4 +44,4 @@ class LnlikeD0:
         model = self.D0_model if model is None else model
 
         diff = (model - exp[0])/exp[1]
-        return -0.5 * diff**2
+        return np.asscalar(-0.5 * diff**2)
