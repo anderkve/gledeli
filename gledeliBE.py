@@ -26,15 +26,30 @@ logging.basicConfig(stream=log_stream,
 
 # initialize as this is not done from withing GAMBIT
 glede = ParametrizedInterface().set_settings()
+# `set_model_names` will run in GAMBIT initialization
 
 
 def set_model_names(model_names):
     """
-    Dummy function that demonstrates how to get the names
-    of active models from GAMBIT
+    Set model according to active models from GAMBIT
+
+    Note:
+        Currently only NLD model, variations in the GSF model are handeled
+        via setting the parameters to fixed values (e.g. 0)
     """
-    for name in model_names:
-        print("gledeliBE: Got model name:", name)
+    logger.debug(f"Attempt to set models in gledeli from gambit.")
+    if "NLDModelCT_and_discretes" in model_names:
+        model_in_gledeli = "ct_and_discrete"
+        glede._nld.model = model_in_gledeli
+        glede._nld.spin_pars = glede.norm_pars
+        logger.debug(f"Set gledeli nld model to {model_in_gledeli}")
+    elif "NLDModelBSFG_and_discretes" in model_names:
+        model_in_gledeli = "bsfg_and_discrete"
+        glede._nld.model = model_in_gledeli
+        glede._nld.spin_pars = glede.norm_pars
+        logger.debug(f"Set gledeli nld model to {model_in_gledeli}")
+    else:
+        raise NotImplementedError("Selected NLD model unknown")
 
 
 def set_model_pars(pars):

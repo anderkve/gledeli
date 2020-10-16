@@ -51,9 +51,6 @@ class ParametrizedInterface:
         self.set_spincut_parameters()
 
         # get experimental gsf data
-        self.set_nld_model()
-
-        # get experimental gsf data
         self.set_gsf_experiments()
 
         # set response from oslo-method experiment
@@ -81,12 +78,6 @@ class ParametrizedInterface:
                                  "Sn": norm_pars.Sn[0],
                                  "sigma2_disc": [1.5, 3.7**2]}
         norm_pars.steps = 100  # number of integration steps for Gg
-
-    def set_nld_model(self):
-        """ Sets additional parameters for nld model """
-        # not necessary for CT model
-        self.glede._nld.model = "bsfg_and_discrete"
-        self.glede._nld.spin_pars = self.glede.norm_pars
 
     def set_firstgen_experiments(self):
         """ Set experimental first generation matrices """
