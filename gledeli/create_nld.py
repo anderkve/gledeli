@@ -49,7 +49,7 @@ class CreateNLD:
 
     def create(self, energy: Optional[np.ndarray] = None
                ) -> Union[float, Vector]:
-        """ Create the nld combination
+        """ Create the nld combination.
 
         Args:
             energy(optional): Energy grid on which the nld shall be

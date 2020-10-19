@@ -79,6 +79,8 @@ class ParametrizedInterface:
                                  "sigma2_disc": [1.5, 3.7**2]}
         norm_pars.steps = 100  # number of integration steps for Gg
 
+        self.glede._nld.spin_pars = norm_pars
+
     def set_firstgen_experiments(self):
         """ Set experimental first generation matrices """
         base = self._data_path / "162Dy_oslo/export"

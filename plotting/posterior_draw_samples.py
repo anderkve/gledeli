@@ -8,6 +8,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import sys
+import re
+import copy
 from typing import Dict, Union, Optional, Tuple, Sequence
 from pathlib import Path
 from tqdm import tqdm
@@ -16,7 +18,10 @@ from scipy.integrate import trapz
 gledelig_path = '../'
 gledelig_path = Path(__file__).parent / gledelig_path
 sys.path.insert(0, str(gledelig_path.resolve()))
+
+# get instance of gledeli with parameters (spincut ...)
 from gledeliBE import glede  # load first to mock pymultinest # noqa
+
 from gledeli.create_nld import CreateNLD  # noqa
 from gledeli.create_gsf import CreateGSF  # noqa
 
@@ -27,8 +32,18 @@ if sys.version_info < MIN_PYTHON:
 
 
 class HDFLoader:
+    """ Load results from GAMBIT search
+
+    Attributes:
+        nld_model: name of nld model (run `load` or `get_nld_model` to set it)
+    """
+
     def __init__(self):
-        pass
+        # list of model names [GAMBIT, gledeli]
+        self._model_names = \
+            [["NLDModelBSFG_and_discretes", "bsfg_and_discrete"],
+             ["NLDModelCT_and_discretes", "ct_and_discrete"]]
+        self.nld_model: Optional[str] = None
 
     def load(self, fname: Union[str, Path]) -> Tuple[pd.DataFrame, Dict]:
         """ loads results from hdf5 file as pd.DataFrame
@@ -44,9 +59,11 @@ class HDFLoader:
         file = h5py.File(fname, 'r')
         group = file['/scan_output/']
 
+        nld_model = self.get_nld_model(group)
+
         data = {}
         data["gsf"] = self.hdf5_gsf_pars(group)
-        data["nld"] = self.hdf5_nld_pars(group)
+        data["nld"] = self.hdf5_nld_pars(group, nld_model)
         data["results"] = self.hdf5_results_pars(group)
 
         # Remove bad points:
@@ -68,6 +85,19 @@ class HDFLoader:
 
         return data, names
 
+    def get_nld_model(self, group) -> dict:
+        keys = group.keys()
+        for pair in self._model_names:
+            if any(re.match(".*"+pair[0]+".*", key) for key in keys):
+                names = pair
+                break
+        try:
+            model = {"gambit": names[0], "gledeli": names[1]}
+        except NameError:
+            raise NotImplementedError("No known nld model")
+        self.nld_model = model["gledeli"]
+        return model
+
     @staticmethod
     def hdf5_gsf_pars(group: h5py._hl.group.Group) -> dict:
         gsf_data = {}
@@ -78,11 +108,16 @@ class HDFLoader:
         return gsf_data
 
     @staticmethod
-    def hdf5_nld_pars(group: h5py._hl.group.Group) -> dict:
+    def hdf5_nld_pars(group: h5py._hl.group.Group, nld_model: dict) -> dict:
         nld_data = {}
-        basename = '#NLDModelCT_and_discretes_parameters '\
-                   '@NLDModelCT_and_discretes::primary_parameters::nld_{key}'
-        keys = ["Ecrit", "T", "Eshift"]
+        basename = f'#{nld_model["gambit"]}_parameters '\
+                   f'@{nld_model["gambit"]}''::primary_parameters::nld_{key}'
+        if nld_model["gledeli"] == "bsfg_and_discrete":
+            keys = ["NLDa", "Ecrit", "Eshift"]
+        elif nld_model["gledeli"] == "ct_and_discrete":
+            keys = ["T", "Ecrit", "Eshift"]
+        else:
+            raise NotImplementedError()
         for key in keys:
             nld_data[f'{key}'] = np.array(group[basename.format(key=key)])
         return nld_data
@@ -102,261 +137,275 @@ class HDFLoader:
         return data
 
 
-def gsf_plot(df: pd.DataFrame, sort_by: Optional[str] = "posterior_weights",
-             sort_ascending: bool = False,
-             weights: Optional[str] = None,
-             n_samples: int = 100,
-             x: Optional[np.array] = None, ax=None):
-    """ Plots gsf samples
+class PosteriorPlotter:
+    """ Plot posterior and profile likelihoods
 
     Args:
-        df: dataframe
-        sort_by: key to sort by, Defaults to "posterior_weights". Use
-            `None` to keep the original sorting.
-        sort_ascending: Sort ascending vs. descending. Specify list for
-            multiple sort orders. If this is a list of bools, must match the
-            length of the by.
-        weights: Transparency for plotting. Defaults to choosing an weights
-            based on the `sort_by`.
-        n_samples: how many samples to plot
-        x: Energy grid for the plot. Chooses a default if `None`
-        ax (matplotlib axis, optional): The axis to plot onto. If not
-            provided, a new figure is created
-
-    Returns:
-        The figure and axis used.
+        glede: Instance of gledeli with models set (as of Oct 2020:nld model)
     """
-    fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
+    def __init__(self, glede):
+        self.glede = glede
+        self._nld = self.glede._nld
+        self._gsf = self.glede._gsf
 
-    weights = sort_by if weights is None else weights
-    if sort_by is not None:
-        df = df.sort_values(sort_by, ascending=sort_ascending)
-    if weights is not None:
-        weights_max = df[weights][:n_samples].max()
-        weights_min = df[weights][:n_samples].min()
-        weights_range = weights_max - weights_min
+    def gsf_plot(self,
+                 df: pd.DataFrame,
+                 sort_by: Optional[str] = "posterior_weights",
+                 sort_ascending: bool = False,
+                 weights: Optional[str] = None,
+                 n_samples: int = 100,
+                 x: Optional[np.array] = None, ax=None):
+        """ Plots gsf samples
 
-    x = np.linspace(0.1, 15, 100) if x is None else x
-    for i, row in enumerate(df.iterrows()):
-        dic = row[1].to_dict()
-        if weights is None:
-            alpha = 1/n_samples
+        Args:
+            df: dataframe
+            sort_by: key to sort by, Defaults to "posterior_weights". Use
+                `None` to keep the original sorting.
+            sort_ascending: Sort ascending vs. descending. Specify list for
+                multiple sort orders. If this is a list of bools, must match the
+                length of the by.
+            weights: Transparency for plotting. Defaults to choosing an weights
+                based on the `sort_by`.
+            n_samples: how many samples to plot
+            x: Energy grid for the plot. Chooses a default if `None`
+            ax (matplotlib axis, optional): The axis to plot onto. If not
+                provided, a new figure is created
+
+        Returns:
+            The figure and axis used.
+        """
+        fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
+
+        weights = sort_by if weights is None else weights
+        if sort_by is not None:
+            df = df.sort_values(sort_by, ascending=sort_ascending)
+        if weights is not None:
+            weights_max = df[weights][:n_samples].max()
+            weights_min = df[weights][:n_samples].min()
+            weights_range = weights_max - weights_min
+
+        x = np.linspace(0.1, 15, 100) if x is None else x
+        for i, row in enumerate(df.iterrows()):
+            dic = row[1].to_dict()
+            if weights is None:
+                alpha = 1/n_samples
+            else:
+                alpha = (dic[weights]-weights_min)/weights_range / 5  # arb 1/5
+                if alpha < 0:
+                    assert alpha > -0.01
+                    alpha = 0
+
+            ax.plot(x, CreateGSF.model(x, dic), '-',
+                    color='k', alpha=alpha)
+            ax.plot(x, CreateGSF.model_E1(x, dic), '--',
+                    color='b', alpha=alpha)
+            ax.plot(x, CreateGSF.model_M1(x, dic), '--',
+                    color='g', alpha=alpha)
+            if i == n_samples:
+                break
+
+        data = self.glede._lnlikegsf_exp.data
+        for name, group in data.groupby("label"):
+            ax.errorbar(x=group["x"], y=group["y"], yerr=group["yerr"],
+                        fmt="o",
+                        label=name, mfc="None", ms=5)
+
+        ax.plot([], [], '-', color='k', label='samples, sum')
+        ax.plot([], [], '--', color='b', label='samples, E1')
+        ax.plot([], [], '--', color='g', label='samples, M1')
+        ax.legend()
+
+        ax.set_yscale('log')
+        ax.set_xlabel(rf"$\gamma$-ray energy $E_\gamma$~[MeV]")
+        ax.set_ylabel(rf"$\gamma$-SF f($E_\gamma$) [MeV$^{{-3}}$]")
+        return fig, ax
+
+    def nld_plot(self,
+                 df: pd.DataFrame,
+                 data_path: Union[str, Path],
+                 sort_by: Optional[str] = "posterior_weights",
+                 sort_ascending: bool = False,
+                 weights: Optional[str] = None,
+                 n_samples: int = 100,
+                 x: Optional[np.array] = None,
+                 ax=None):
+        """ Plots nld samples
+
+        Note:
+            As of now, the direcrete levels are binned with the same as the
+            x binning generally given here. This might be a too fine binning?
+
+        Args:
+            df: dataframe
+            data_path: Path to folder containing discrete levels
+            sort_by: key to sort by, Defaults to "posterior_weights". Use
+                `None` to keep the original sorting.
+            sort_ascending: Sort ascending vs. descending. Specify list for
+                multiple sort orders. If this is a list of bools, must match the
+                length of the by.
+            weights: Transparency for plotting. Defaults to choosing an weights
+                based on the `sort_by`.
+            n_samples: how many samples to plot
+            x: Energy grid for the plot. Chooses a default if `None`
+            ax (matplotlib axis, optional): The axis to plot onto. If not
+                provided, a new figure is created
+
+        Returns:
+            The figure and axis used.
+        """
+        fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
+
+        weights = sort_by if weights is None else weights
+        if sort_by is not None:
+            df = df.sort_values(sort_by, ascending=sort_ascending)
+        if weights is not None:
+            weights_max = df[weights][:n_samples].max()
+            weights_min = df[weights][:n_samples].min()
+            weights_range = weights_max - weights_min
+
+        x = np.linspace(0.1, 8, 100) if x is None else x
+        createNLD = copy.deepcopy(self._nld)
+        createNLD.energy = x
+
+        for i, row in enumerate(df.iterrows()):
+            dic = row[1].to_dict()
+            if weights is None:
+                alpha = 1/n_samples
+            else:
+                alpha = (dic[weights]-weights_min)/weights_range / 5  # arb 1/5
+                if alpha < 0:
+                    assert alpha > -0.01
+                    alpha = 0
+
+            createNLD.pars = dic
+            nld = createNLD.create()
+            nld.plot(ax=ax, color="b", alpha=alpha)
+
+            if i == n_samples:
+                break
+
+        createNLD.pars["Ecrit"] = x[-1]
+        bin_edges_discrete, ibin_last = createNLD.bin_edges_discrete()
+        discrete = createNLD.load_discrete(bin_edges=bin_edges_discrete)
+        discrete.plot(ax=ax, c="k", label="discrete")
+
+        ax.plot([], [], '-', color='b', label='samples')
+        ax.legend()
+
+        ax.set_yscale('log')
+        ax.set_ylabel(r"Level density $\rho(E_x)~[\mathrm{MeV}^{-1}]$")
+        ax.set_xlabel(r"Excitation energy $E_x~[\mathrm{MeV}]$")
+
+        ax.set_ylim(bottom=1)
+        return fig, ax
+
+    def compare_firstgen(self,
+                         pars: pd.DataFrame, ax=None):
+        """ Compare input first generation spectrum to a fit
+
+        Args:
+            nld_pars: one row of DataFrame containing parmeters
+            ax (matplotlib axis, optional): The axis to plot onto. If not
+                provided, a new figure is created
+
+        Returns:
+            The figure and axis used.
+        """
+        if ax is None:
+            nexp = len(glede._lnlikefgs)
+            fig, ax = plt.subplots(2, nexp, constrained_layout=True)
+            fig.set_size_inches(4*nexp, 6)
         else:
-            alpha = (dic[weights]-weights_min)/weights_range / 5  # arb 1/5
-            if alpha < 0:
-                assert alpha > -0.01
-                alpha = 0
+            fig, ax = ax.figure, ax
 
-        ax.plot(x, CreateGSF.model(x, dic), '-',
-                color='k', alpha=alpha)
-        ax.plot(x, CreateGSF.model_E1(x, dic), '--',
-                color='b', alpha=alpha)
-        ax.plot(x, CreateGSF.model_M1(x, dic), '--',
-                color='g', alpha=alpha)
-        if i == n_samples:
-            break
+        nld = copy.deepcopy(self._nld)
+        nld.pars = pars.to_dict()
+        gsf = CreateGSF(pars=pars.to_dict())
 
-    data = glede._lnlikegsf_exp.data
-    for name, group in data.groupby("label"):
-        ax.errorbar(x=group["x"], y=group["y"], yerr=group["yerr"], fmt="o",
-                    label=name, mfc="None", ms=5)
+        # nld = glede._nld
+        # gsf = glede._gsf
+        # nld.pars = pars.to_dict()
+        # gsf.pas = pars.to_dict()
 
-    ax.plot([], [], '-', color='k', label='samples, sum')
-    ax.plot([], [], '--', color='b', label='samples, E1')
-    ax.plot([], [], '--', color='g', label='samples, M1')
-    ax.legend()
+        for i, (name, fg_creator) in enumerate(glede._lnlikefgs.items()):
+            fg_creator.nld = nld
+            fg_creator.gsf = gsf
+            exp = fg_creator.matrix
 
-    ax.set_yscale('log')
-    ax.set_xlabel(rf"$\gamma$-ray energy $E_\gamma$~[MeV]")
-    ax.set_ylabel(rf"$\gamma$-SF f($E_\gamma$) [MeV$^{{-3}}$]")
-    return fig, ax
+            model = fg_creator.create()
 
+            exp.plot(ax=ax[i, 0], scale="log", vmin=1e-3, vmax=1e-1)
+            model.plot(ax=ax[i, 1], scale="log", vmin=1e-3, vmax=1e-1)
 
-def compare_firstgen(pars: pd.DataFrame, ax=None):
-    """ Compare input first generation spectrum to a fit
+            x = np.linspace(*ax[i, 0].get_ylim())
+            ax[i, 0].plot(x, x, "r--", label="E_x = E_g")
+            ax[i, 1].plot(x, x, "r--", label="E_x = E_g")
 
-    Args:
-        nld_pars: one row of DataFrame containing parmeters
-        ax (matplotlib axis, optional): The axis to plot onto. If not
+            ax[i, 0].text(0.05, 0.05, rf"(input: {name} exp.)",
+                          fontsize=plt.rcParams["axes.labelsize"],
+                          transform=ax[i, 0].transAxes)
+
+            ax[i, 1].text(0.05, 0.05, r"(model)",
+                          fontsize=plt.rcParams["axes.labelsize"],
+                          transform=ax[i, 1].transAxes)
+        return fig, ax
+
+    def plot_posterior_marginals(self,
+                                 data: pd.DataFrame, key: str, ax=None, **kwargs):
+        """ Plots marginalized posteriors
+
+        Args:
+            data: samples
+            key: key to make histogram of
+            ax (matplotlib axis, optional): The axis to plot onto. If not
             provided, a new figure is created
+            kwargs: Additional kwargs for plotting
 
-    Returns:
-        The figure and axis used.
-    """
-    if ax is None:
-        nexp = len(glede._lnlikefgs)
-        fig, ax = plt.subplots(2, nexp, constrained_layout=True)
-        fig.set_size_inches(4*nexp, 6)
-    else:
-        fig, ax = ax.figure, ax
-
-    data_path = "../Backends/installed/gledeli/1.0/data/"
-
-    nld = CreateNLD(pars=pars.to_dict(), data_path=data_path)
-    gsf = CreateGSF(pars=pars.to_dict())
-
-    # nld = glede._nld
-    # gsf = glede._gsf
-    # nld.pars = pars.to_dict()
-    # gsf.pas = pars.to_dict()
-
-    for i, (name, fg_creator) in enumerate(glede._lnlikefgs.items()):
-        fg_creator.nld = nld
-        fg_creator.gsf = gsf
-        exp = fg_creator.matrix
-
-        model = fg_creator.create()
-
-        exp.plot(ax=ax[i, 0], scale="log", vmin=1e-3, vmax=1e-1)
-        model.plot(ax=ax[i, 1], scale="log", vmin=1e-3, vmax=1e-1)
-
-        x = np.linspace(*ax[i, 0].get_ylim())
-        ax[i, 0].plot(x, x, "r--", label="E_x = E_g")
-        ax[i, 1].plot(x, x, "r--", label="E_x = E_g")
-
-        ax[i, 0].text(0.05, 0.05, rf"(input: {name} exp.)",
-                      fontsize=plt.rcParams["axes.labelsize"],
-                      transform=ax[i, 0].transAxes)
-
-        ax[i, 1].text(0.05, 0.05, r"(model)",
-                      fontsize=plt.rcParams["axes.labelsize"],
-                      transform=ax[i, 1].transAxes)
-    return fig, ax
-
-
-def nld_plot(df: pd.DataFrame,
-             data_path: Union[str, Path],
-             sort_by: Optional[str] = "posterior_weights",
-             sort_ascending: bool = False,
-             weights: Optional[str] = None,
-             n_samples: int = 100,
-             x: Optional[np.array] = None,
-             ax=None):
-    """ Plots nld samples
-
-    Note:
-        As of now, the direcrete levels are binned with the same as the
-        x binning generally given here. This might be a too fine binning?
-
-    Args:
-        df: dataframe
-        data_path: Path to folder containing discrete levels
-        sort_by: key to sort by, Defaults to "posterior_weights". Use
-            `None` to keep the original sorting.
-        sort_ascending: Sort ascending vs. descending. Specify list for
-            multiple sort orders. If this is a list of bools, must match the
-            length of the by.
-        weights: Transparency for plotting. Defaults to choosing an weights
-            based on the `sort_by`.
-        n_samples: how many samples to plot
-        x: Energy grid for the plot. Chooses a default if `None`
-        ax (matplotlib axis, optional): The axis to plot onto. If not
-            provided, a new figure is created
-
-    Returns:
-        The figure and axis used.
-    """
-    fig, ax = plt.subplots() if ax is None else (ax.figure, ax)
-
-    weights = sort_by if weights is None else weights
-    if sort_by is not None:
-        df = df.sort_values(sort_by, ascending=sort_ascending)
-    if weights is not None:
-        weights_max = df[weights][:n_samples].max()
-        weights_min = df[weights][:n_samples].min()
-        weights_range = weights_max - weights_min
-
-    x = np.linspace(0.1, 8, 100) if x is None else x
-    createNLD = CreateNLD(pars=None, energy=x,
-                          data_path=data_path)
-    for i, row in enumerate(df.iterrows()):
-        dic = row[1].to_dict()
-        if weights is None:
-            alpha = 1/n_samples
+        Returns:
+            The figure and axis used.
+        """
+        if ax is None:
+            fig, ax = plt.subplots(constrained_layout=True)
         else:
-            alpha = (dic[weights]-weights_min)/weights_range / 5  # arb 1/5
-            if alpha < 0:
-                assert alpha > -0.01
-                alpha = 0
+            fig, ax = ax.figure, ax
 
-        createNLD.pars = dic
-        nld = createNLD.create()
-        nld.plot(ax=ax, color="b", alpha=alpha)
+        x = data[key]
+        weights = data['posterior_weights']
+        hist, bin_edges = np.histogram(x, bins=100, weights=weights)
+        bin_width = np.diff(bin_edges)
+        hist /= hist.max()
+        ax.bar(bin_edges[:-1], hist, width=bin_width, align="edge",
+               label="posterior", color="tab:blue", **kwargs)
 
-        if i == n_samples:
-            break
+        # profile likelihood (per bin)
+        groups = pd.cut(x, bin_edges, precision=6)
+        grouped = data.groupby(groups)
+        profile = np.zeros(len(grouped))
+        for i, (name, group) in enumerate(grouped):
+            profile[i] = group["LogLike"].max()
 
-    createNLD.pars["Ecrit"] = x[-1]
-    bin_edges_discrete, ibin_last = createNLD.bin_edges_discrete()
-    discrete = createNLD.load_discrete(bin_edges=bin_edges_discrete)
-    discrete.plot(ax=ax, c="k", label="discrete")
+        norm = data["LogLike"].max()
+        ax.bar(bin_edges[:-1], np.exp(profile-norm), width=bin_width, align="edge",
+               label="profile likelihood", color="tab:orange", **kwargs)
 
-    ax.plot([], [], '-', color='b', label='samples')
-    ax.legend()
+        # add marker for max posterior and max likelihood
+        max_post_sample = data.iloc[data['posterior_weights'].idxmax()]
+        ax.plot(max_post_sample[key], 0.08, "ks",
+                label="max posterior", markerfacecolor="None")
+        max_lnlike_sample = data.iloc[data['LogLike'].idxmax()]
+        ax.plot(max_lnlike_sample[key], 0.05, "kd",
+                label="max Lnlike", markerfacecolor="None")
 
-    ax.set_yscale('log')
-    ax.set_ylabel(r"Level density $\rho(E_x)~[\mathrm{MeV}^{-1}]$")
-    ax.set_xlabel(r"Excitation energy $E_x~[\mathrm{MeV}]$")
+        # lines to read of 1, 2, 3 sigma uncertainty (Wilk's theorem)
+        ax.axhline(np.exp(-0.5), color="k", linestyle="--", linewidth=1)
+        ax.axhline(np.exp(-2), color="k", linestyle="--", linewidth=1)
+        ax.axhline(np.exp(-4), color="k", linestyle="--", linewidth=1)
 
-    ax.set_ylim(bottom=1)
-    return fig, ax
-
-
-def plot_posterior_marginals(data: pd.DataFrame, key: str, ax=None, **kwargs):
-    """ Plots marginalized posteriors
-
-    Args:
-        data: samples
-        key: key to make histogram of
-        ax (matplotlib axis, optional): The axis to plot onto. If not
-        provided, a new figure is created
-        kwargs: Additional kwargs for plotting
-
-    Returns:
-        The figure and axis used.
-    """
-    if ax is None:
-        fig, ax = plt.subplots(constrained_layout=True)
-    else:
-        fig, ax = ax.figure, ax
-
-    x = data[key]
-    weights = data['posterior_weights']
-    hist, bin_edges = np.histogram(x, bins=100, weights=weights)
-    bin_width = np.diff(bin_edges)
-    hist /= hist.max()
-    ax.bar(bin_edges[:-1], hist, width=bin_width, align="edge",
-           label="posterior", color="tab:blue", **kwargs)
-
-    # profile likelihood (per bin)
-    groups = pd.cut(x, bin_edges, precision=6)
-    grouped = data.groupby(groups)
-    profile = np.zeros(len(grouped))
-    for i, (name, group) in enumerate(grouped):
-        profile[i] = group["LogLike"].max()
-
-    norm = data["LogLike"].max()
-    ax.bar(bin_edges[:-1], np.exp(profile-norm), width=bin_width, align="edge",
-           label="profile likelihood", color="tab:orange", **kwargs)
-
-    # add marker for max posterior and max likelihood
-    max_post_sample = data.iloc[data['posterior_weights'].idxmax()]
-    ax.plot(max_post_sample[key], 0.08, "ks",
-            label="max posterior", markerfacecolor="None")
-    max_lnlike_sample = data.iloc[data['LogLike'].idxmax()]
-    ax.plot(max_lnlike_sample[key], 0.05, "kd",
-            label="max Lnlike", markerfacecolor="None")
-
-    # lines to read of 1, 2, 3 sigma uncertainty (Wilk's theorem)
-    ax.axhline(np.exp(-0.5), color="k", linestyle="--", linewidth=1)
-    ax.axhline(np.exp(-2), color="k", linestyle="--", linewidth=1)
-    ax.axhline(np.exp(-4), color="k", linestyle="--", linewidth=1)
-
-    ax.legend(fontsize="xx-small", markerscale=0.5)
-    ax.set_xlabel(key)
-    ax.set_ylabel("posterior ratio $p/p_{max}$\n"
-                  "profile Likelihood ratio $L/L_{max}$")
-    return fig, ax
+        ax.legend(fontsize="xx-small", markerscale=0.5)
+        ax.set_xlabel(key)
+        ax.set_ylabel("posterior ratio $p/p_{max}$\n"
+                      "profile Likelihood ratio $L/L_{max}$")
+        return fig, ax
 
 
 def bm1(df: Union[pd.DataFrame, Dict],
@@ -429,6 +478,7 @@ if __name__ == "__main__":
     print("loading results")
     hdfloader = HDFLoader()
     results, names = hdfloader.load(results_file)
+    glede._nld.model = hdfloader.nld_model
     print("finished")
 
     results["B(M1)"] = results.apply(bm1, axis=1)
@@ -440,22 +490,23 @@ if __name__ == "__main__":
     results_equal["posterior_weights"] = 1
 
     # gsf plots
-    fig, ax = gsf_plot(results)
+    pp = PosteriorPlotter(glede)
+    fig, ax = pp.gsf_plot(results)
     fig.suptitle("sampels sorted by posterior_weight")
     fig.savefig(figdir/"gsf_sampels sorted by posterior_weight")
 
-    fig, ax = gsf_plot(results, sort_by="LogLike")
+    fig, ax = pp.gsf_plot(results, sort_by="LogLike")
     fig.suptitle("sampels sorted by likelihood")
     fig.savefig(figdir/"gsf_sampels sorted by likelihood")
 
-    fig, ax = gsf_plot(results_equal, sort_by=None)
+    fig, ax = pp.gsf_plot(results_equal, sort_by=None)
     fig.suptitle("random samples, equally weighted")
     fig.savefig(figdir/"gsf_random samples_eqweight")
 
     # nld plots
     def wnld_plot(*args, **kwargs):
         """ wrapper """
-        return nld_plot(*args, **kwargs, data_path=gledelig_path/"data")
+        return pp.nld_plot(*args, **kwargs, data_path=gledelig_path/"data")
 
     fig, ax = wnld_plot(results)
     fig.suptitle("sampels sorted by posterior_weight")
@@ -471,12 +522,13 @@ if __name__ == "__main__":
 
     # firstgen plots
     fig, ax = \
-        compare_firstgen(results.iloc[results['posterior_weights'].idxmax()])
+        pp.compare_firstgen(results.iloc[
+                                results['posterior_weights'].idxmax()])
     fig.savefig(figdir/"fg_posterior_max")
 
     for i, (_, row) in enumerate(results_equal.iterrows()):
         fig, ax = \
-            compare_firstgen(row)
+            pp.compare_firstgen(row)
         fig.savefig(figdir/f"fg_random_{i}")
         plt.close(fig)
         if i > 10:
@@ -493,7 +545,7 @@ if __name__ == "__main__":
             base = "gsf_"
         else:
             base = "dependent_"
-        fig, _ = plot_posterior_marginals(results, key, alpha=0.5)
+        fig, _ = pp.plot_posterior_marginals(results, key, alpha=0.5)
         fig.savefig(figdir / (f'{base}{key}_posterior_hist.png'))
         plt.close(fig)
 
