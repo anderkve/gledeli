@@ -64,6 +64,7 @@ class HDFLoader:
         data = {}
         data["gsf"] = self.hdf5_gsf_pars(group)
         data["nld"] = self.hdf5_nld_pars(group, nld_model)
+        data["other"] = self.hdf5_other_pars(group)
         data["results"] = self.hdf5_results_pars(group)
 
         # Remove bad points:
@@ -80,7 +81,8 @@ class HDFLoader:
             names[key] = data[key].columns.values
 
         # verify_integrity ensures that we don't have pars with same name
-        data = pd.concat([data["nld"], data["gsf"], data["results"]],
+        data = pd.concat([data["nld"], data["gsf"], data["other"],
+                         data["results"]],
                          axis=1, verify_integrity=True)
 
         return data, names
@@ -121,6 +123,15 @@ class HDFLoader:
         for key in keys:
             nld_data[f'{key}'] = np.array(group[basename.format(key=key)])
         return nld_data
+
+    @staticmethod
+    def hdf5_other_pars(group: h5py._hl.group.Group) -> dict:
+        # quickfix to put here
+        other_data = {}
+        base = "#gledeliResults @NuclearBit::getGledeliResults::"
+        other_data['Gg_model'] = np.array(group[base+"Gg_model"])
+        other_data['D0_model'] = np.array(group[base+"D0_model"])
+        return other_data
 
     @staticmethod
     def hdf5_results_pars(group: h5py._hl.group.Group) -> dict:
@@ -351,14 +362,18 @@ class PosteriorPlotter:
         return fig, ax
 
     def plot_posterior_marginals(self,
-                                 data: pd.DataFrame, key: str, ax=None, **kwargs):
+                                 data: pd.DataFrame, key: str, ax=None,
+                                 histrange=None, qs=0.999, **kwargs):
         """ Plots marginalized posteriors
 
         Args:
             data: samples
             key: key to make histogram of
             ax (matplotlib axis, optional): The axis to plot onto. If not
-            provided, a new figure is created
+                provided, a new figure is created
+            histrange: range for histogram. If not provided (default),
+                calculates it from the fraction `qs` of sample to include
+            qs: fraction of sample to include in bound, defaults to 0.999.
             kwargs: Additional kwargs for plotting
 
         Returns:
@@ -371,7 +386,11 @@ class PosteriorPlotter:
 
         x = data[key]
         weights = data['posterior_weights']
-        hist, bin_edges = np.histogram(x, bins=100, weights=weights)
+        if histrange is None:
+            q = [0.5 - 0.5*qs, 0.5 + 0.5*qs]
+            histrange = self.quantile(x, q, weights=weights)
+        hist, bin_edges = np.histogram(x, bins=100, weights=weights,
+                                       range=histrange)
         bin_width = np.diff(bin_edges)
         hist /= hist.max()
         ax.bar(bin_edges[:-1], hist, width=bin_width, align="edge",
@@ -406,6 +425,52 @@ class PosteriorPlotter:
         ax.set_ylabel("posterior ratio $p/p_{max}$\n"
                       "profile Likelihood ratio $L/L_{max}$")
         return fig, ax
+
+    @staticmethod
+    def quantile(x, q, weights=None):
+        """
+        Compute sample quantiles with support for weighted samples.
+        Note
+        ----
+        When ``weights`` is ``None``, this method simply calls numpy's percentile
+        function with the values of ``q`` multiplied by 100.
+        Parameters
+        ----------
+        x : array_like[nsamples,]
+           The samples.
+        q : array_like[nquantiles,]
+           The list of quantiles to compute. These should all be in the range
+           ``[0, 1]``.
+        weights : Optional[array_like[nsamples,]]
+            An optional weight corresponding to each sample. These
+        Returns
+        -------
+        quantiles : array_like[nquantiles,]
+            The sample quantiles computed at ``q``.
+        Raises
+        ------
+        ValueError
+            For invalid quantiles; ``q`` not in ``[0, 1]`` or dimension mismatch
+            between ``x`` and ``weights``.
+        """
+        x = np.atleast_1d(x)
+        q = np.atleast_1d(q)
+
+        if np.any(q < 0.0) or np.any(q > 1.0):
+            raise ValueError("Quantiles must be between 0 and 1")
+
+        if weights is None:
+            return np.percentile(x, list(100.0 * q))
+        else:
+            weights = np.atleast_1d(weights)
+            if len(x) != len(weights):
+                raise ValueError("Dimension mismatch: len(weights) != len(x)")
+            idx = np.argsort(x)
+            sw = weights[idx]
+            cdf = np.cumsum(sw)[:-1]
+            cdf /= cdf[-1]
+            cdf = np.append(0, cdf)
+            return np.interp(q, cdf, x[idx]).tolist()
 
 
 def bm1(df: Union[pd.DataFrame, Dict],
@@ -547,6 +612,14 @@ if __name__ == "__main__":
             base = "dependent_"
         fig, _ = pp.plot_posterior_marginals(results, key, alpha=0.5)
         fig.savefig(figdir / (f'{base}{key}_posterior_hist.png'))
+        plt.close(fig)
+
+    for key in ["D0_model", "Gg_model"]:
+        base = "dependent_"
+        histrange = [0, 10] if key == "D0_model" else [0, 500]
+        fig, _ = pp.plot_posterior_marginals(results, key, alpha=0.5,
+                                             histrange=histrange)
+        fig.savefig(figdir / (f'{base}{key}_posterior_hist_zzom.png'))
         plt.close(fig)
 
     print("prepare corner plot")
