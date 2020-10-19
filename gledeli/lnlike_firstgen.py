@@ -43,6 +43,8 @@ class LnlikeFirstGen():
         self.matrix: Optional[Matrix] = None
         self.matrix_std: Optional[Matrix] = None
 
+        self._matrix_rowsum: Optional[np.ndarray] = None
+
         self.resolutionEx: Optional[float] = 0.15
         self.resolutionEg: Optional[float] = 0.1
         self._truncate: float = 2
@@ -68,7 +70,8 @@ class LnlikeFirstGen():
         self.matrix_std = self.load_matrix(fname=fnstd)
 
         err_msg = "Fg matrix has to (be trimed) and normalized to 1."
-        np.testing.assert_allclose(self.matrix.values.sum(axis=1), 1,
+        self._matrix_rowsum = np.nansum(self.matrix.values, axis=1)
+        np.testing.assert_allclose(self._matrix_rowsum, 1, atol=0.1,
                                    err_msg=err_msg)
 
         # check that it's equally spaced
@@ -121,7 +124,7 @@ class LnlikeFirstGen():
                                resolution=np.zeros_like(matrix.Ex),
                                E_nld=nld.E, Eg=gsf.E, Ex=matrix.Ex)
 
-        values *= matrix.values.sum(axis=1)[:, np.newaxis]
+        values *= self._matrix_rowsum[:, np.newaxis]
         model = Matrix(values=values, Ex=matrix.Ex, Eg=matrix.Eg)
 
         if self.resolutionEx is not None:

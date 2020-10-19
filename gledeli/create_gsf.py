@@ -12,17 +12,17 @@ class CreateGSF:
         pars: GSF parameters
     """
 
-    def __init__(self, pars: Dict, energy: Optional[np.array] = None):
+    def __init__(self, pars: Dict, energy: Optional[np.ndarray] = None):
         self.pars = pars
         self.energy = energy
 
         self._gsf = None
 
-    def __call__(self, energy: Optional[np.array] = None, **kwargs):
+    def __call__(self, energy: Optional[np.ndarray] = None, **kwargs):
         """ Wrapper for self.create """
         return self.create(energy, **kwargs)
 
-    def create(self, energy: Optional[np.array] = None,
+    def create(self, energy: Optional[np.ndarray] = None,
                kind: str = "total") -> Vector:
         """Create the model
 
