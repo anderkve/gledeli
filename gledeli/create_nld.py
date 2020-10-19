@@ -61,7 +61,7 @@ class CreateNLD:
         if self.model.lower() in ["ct_and_discrete", "bsfg_and_discrete"]:
             nld = self.model_and_discrete(energy)
         else:
-            NotImplementedError(f"model {self.model} not known")
+            raise NotImplementedError(f"model {self.model} not known")
         return nld
 
     def model_and_discrete(self,
@@ -110,12 +110,12 @@ class CreateNLD:
 
         elif isinstance(energy, float):
             if energy < self.pars['Ecrit']:
-                NotImplementedError(f"Energy {energy} is below Ecrit"
+                raise NotImplementedError(f"Energy {energy} is below Ecrit"
                                     f"{self.pars['Ecrit']}. Binning for nld "
-                                    f"from discretes not determined.")
+                                    f"from discretes not determined.") # noqa
             nld = self.model_nld(energy)
         else:
-            TypeError(f"energy must be float or np.ndarray")
+            raise TypeError(f"energy must be float or np.ndarray")
 
         self._nld = nld
         return nld
@@ -143,7 +143,7 @@ class CreateNLD:
                 return self.model_bsfg(energy=E, NLDa=self.pars['NLDa'],
                                        Eshift=self.pars['Eshift'])
         else:
-            NotImplementedError(f"model {self.model} not known")
+            raise NotImplementedError(f"model {self.model} not known")
 
         if isinstance(energy, np.ndarray):
             oversample_factor: int = 4
@@ -156,7 +156,7 @@ class CreateNLD:
         elif isinstance(energy, float):
             model_nld = model_call(energy)
         else:
-            TypeError(f"energy must be float or np.ndarray")
+            raise TypeError(f"energy must be float or np.ndarray")
         return model_nld
 
     def model_bsfg(self, energy: Union[float, np.ndarray],
