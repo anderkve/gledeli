@@ -32,10 +32,6 @@ glede = ParametrizedInterface().set_settings()
 def set_model_names(model_names):
     """
     Set model according to active models from GAMBIT
-
-    Note:
-        Currently only NLD model, variations in the GSF model are handeled
-        via setting the parameters to fixed values (e.g. 0)
     """
     logger.debug(f"Attempt to set models in gledeli from gambit.")
     if "NLDModelCT_and_discretes" in model_names:
@@ -48,6 +44,17 @@ def set_model_names(model_names):
         logger.debug(f"Set gledeli nld model to {model_in_gledeli}")
     else:
         raise NotImplementedError("Selected NLD model unknown")
+
+    if any(k in model_names for k in ["GSFModel20", "GSF_GLOModel20"]):
+        model_in_gledeli = "GLO"
+        glede._gsf.gdr_model = model_in_gledeli
+        logger.debug(f"Set gledeli nld model to {model_in_gledeli}")
+    elif "GSF_EGLOModel20" in model_names:
+        model_in_gledeli = "EGLO"
+        glede._gsf.gdr_model = model_in_gledeli
+        logger.debug(f"Set gledeli nld model to {model_in_gledeli}")
+    else:
+        raise NotImplementedError("Selected GSF model unknown")
 
 
 def set_model_pars(pars):
