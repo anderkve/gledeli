@@ -61,4 +61,4 @@ class LnlikeGg(NormalizerGSF):
         assert model is not None
 
         diff = (model - exp[0])/exp[1]
-        return np.asscalar(-0.5 * diff**2)
+        return (-0.5 * diff**2).item()
