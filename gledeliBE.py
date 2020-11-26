@@ -41,12 +41,10 @@ def set_model_names(model_names):
     if "NLDModelCT_and_discretes" in model_names:
         model_in_gledeli = "ct_and_discrete"
         glede._nld.model = model_in_gledeli
-        glede._nld.spin_pars = glede.norm_pars
         logger.debug(f"Set gledeli nld model to {model_in_gledeli}")
     elif "NLDModelBSFG_and_discretes" in model_names:
         model_in_gledeli = "bsfg_and_discrete"
         glede._nld.model = model_in_gledeli
-        glede._nld.spin_pars = glede.norm_pars
         logger.debug(f"Set gledeli nld model to {model_in_gledeli}")
     else:
         raise NotImplementedError("Selected NLD model unknown")
@@ -124,71 +122,3 @@ def get_results():
     results["Gg_model"] = glede.Gg_model
 
     return results
-
-
-if __name__ == "__main__":
-    # run with these parameters
-    # glede.nld_pars = {"T": 0.61, "Eshift": -1.02,
-    #                   "Ecrit": 2.3}
-    glede.nld_pars = {"NLDa": 17, "Eshift": 0.30,
-                      "Ecrit": 1.98}
-    gsf_pars = {}
-    gsf_pars['p1'], gsf_pars['p2'], gsf_pars['p3'] = np.array([12.68, 236., 3.])  # noqa
-    gsf_pars['p4'], gsf_pars['p5'], gsf_pars['p6'] = np.array([15.2,  175., 2.2]) # noqa
-    gsf_pars['p7'], gsf_pars['p8'], gsf_pars['p9'] = np.array([6.42, 4.2, 1.9])
-    gsf_pars['p10'], gsf_pars['p11'], gsf_pars['p12'] = np.array([10.6, 30., 4.9])
-    gsf_pars['p13'], gsf_pars['p14'], gsf_pars['p15'] = np.array([2.81, 0.54, 0.76]) # noqa
-    gsf_pars['p20'] = 0.61
-
-    glede.gsf_pars = gsf_pars
-
-    try:
-        glede.run()
-        success = True
-    except Exception as inst:
-        is_cutoff = re.match("lnlike: [+-]*[\d.]+(?:e[+-]?\d+)* below cutoff",
-                             inst.args[0])
-        print("asdasd", is_cutoff)
-        if is_cutoff is None:
-            raise inst
-        else:
-            logger.info(f"{inst.__class__.__name__}: {inst}")
-            success = False
-
-    print(log_stream.getvalue())
-    log_stream.seek(0)
-    log_stream.truncate(0)
-
-    print("\n Give me a break")
-    try:
-        glede.run()
-        success = True
-    except Exception as inst:
-        is_cutoff = re.match("lnlike: [+-]*[\d.]+(?:e[+-]?\d+)* below cutoff",
-                             inst.args[0])
-        print("asdasd", is_cutoff)
-        if is_cutoff is None:
-            raise inst
-        else:
-            logger.info(f"{inst.__class__.__name__}: {inst}")
-            success = False
-
-
-    import matplotlib.pyplot as plt
-    for name, lnlike in glede._lnlikefgs.items():
-        lnlike.matrix.plot(vmin=1e-3, vmax=1e-1, scale="log")
-        lnlike.create().plot(vmin=1e-3, vmax=1e-1, scale="log")
-        print(name)
-        print(lnlike.matrix.Ex[0], lnlike.matrix.Ex[-1], lnlike.matrix.Eg[0],
-              lnlike.matrix.Eg[-1])
-
-    # data = glede._lnlikegsf_exp.data
-    # data["rel_err"] = data["yerr"]/data["y"]
-    # print(data)
-
-    print("results:", get_results())
-
-
-    print(log_stream.getvalue())
-
-    plt.show()
