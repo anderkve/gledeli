@@ -228,9 +228,10 @@ def fGLO_CT(E: Union[np.ndarray, float],
     Returns:
         Union[np.ndarray, float]: strength function
     """
-    Gamma = Gamma0 / E0**2 * (E**2 + 4 * pi**2 * T**2)
-    f1 = (E * Gamma) / ((E**2 - E0**2)**2 + E**2 * Gamma**2)
-    f2 = 0.7 * Gamma0 * 4 * pi**2 * T**2 / E0**5
+    def Gamma_c(E, T=T):
+        return Gamma0 / E0**2 * (E**2 + (2. * pi * T)**2)
+    f1 = (E * Gamma_c(E)) / ((E**2 - E0**2)**2 + E**2 * Gamma_c(E)**2)
+    f2 = 0.7 * Gamma_c(0) / E0**3
 
     f = strength_factor * sigma0 * Gamma0 * (f1 + f2)
     return f
@@ -295,10 +296,12 @@ def fEGLO_CT(E: Union[np.ndarray, float],
     #     k = 1. + 0.09 * (A - 148)**2 * np.exp(-0.18 * (A - 148))
 
     chi = k + (1.0 - k) * (E - epsilon_0) / (E0 - epsilon_0)
-    Gamma_k = chi * Gamma0 / E0**2 * (E**2 + (2. * pi * T)**2)
 
-    f1 = (E * Gamma_k) / ((E**2 - E0**2)**2 + E**2 * Gamma_k**2)
-    f2 = 0.7 * Gamma0 * 4 * pi**2 * T**2 / E0**5
+    def Gamma_k(E, T=T):
+        return chi * Gamma0 / E0**2 * (E**2 + (2. * pi * T)**2)
+
+    f1 = (E * Gamma_k(E)) / ((E**2 - E0**2)**2 + E**2 * Gamma_k(E)**2)
+    f2 = 0.7 * Gamma_k(E=0) / E0**3
 
     f = strength_factor * sigma0 * Gamma0 * (f1 + f2)
 
