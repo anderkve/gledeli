@@ -63,8 +63,8 @@ class ParametrizedInterface:
     def set_exp_data_D0_Gg(self):
         """ Set observables D0 and Gg (and target spin"""
         norm_pars = self.glede.norm_pars
-        norm_pars.D0 = [3.14, 0.2]  # eV
-        norm_pars.Gg = [114, 10.]  # meV
+        norm_pars.D0 = [2.4, 0.2]  # eV
+        norm_pars.Gg = [112., 10.]  # meV
         norm_pars.Jtarget = 5 / 2  # A-1 nucleus
 
     def set_spincut_parameters(self):
@@ -83,7 +83,7 @@ class ParametrizedInterface:
 
     def set_firstgen_experiments(self):
         """ Set experimental first generation matrices """
-        base = self._data_path / "simulated" / "export"
+        base = self._data_path / "162Dy_oslo/export"
 
         self.glede._lnlikefgs = {}
 
@@ -107,13 +107,11 @@ class ParametrizedInterface:
 
     def set_gsf_experiments(self):
         """ Set experimental gsf strength files """
-        base = self._data_path / "simulated" / "export"
-        # renstr_label = "Renstrøm2018 et al. > 8.5 MeV"
+        base = self._data_path
+        renstr_label = "Renstrøm2018 et al. > 8.5 MeV"
         gsf_data = \
-            [GSFFile(base / "gsf_E1.dat",
-                     kind="E1", label="fake E1"),
-             #GSFFile(base / "gsf" / "fe1_exp_066_162_photoneut_2018Ren.dat",
-             #         kind="E1", label=renstr_label),
+            [GSFFile(base / "gsf" / "fe1_exp_066_162_photoneut_2018Ren.dat",
+                     kind="E1", label=renstr_label),
              # GSFFile(base / "gsf" / "fe1_exp_067_165_photoabs_1981Gur.dat",
              #         kind="E1"),
              # GSFFile(base / "gsf" / "fe1_exp_067_165_photoneut_1966Axe.dat",
@@ -131,8 +129,8 @@ class ParametrizedInterface:
         if any(df["xerr"] != 0):
             raise NotImplementedError()
 
-        # df_renstr = df.loc[("E1", renstr_label)]
-        # df_renstr[df_renstr.x < 8.5] = np.nan
+        df_renstr = df.loc[("E1", renstr_label)]
+        df_renstr[df_renstr.x < 8.5] = np.nan
         df.dropna(inplace=True)
 
         self.glede._lnlikegsf_exp.data = df
