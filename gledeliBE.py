@@ -45,12 +45,20 @@ def set_model_names(model_names):
     else:
         raise NotImplementedError("Selected NLD model unknown")
 
-    if any(k in model_names for k in ["GSFModel20", "GSF_GLOModel20"]):
-        model_in_gledeli = "GLO"
+    if any(k in model_names for k in ["GSFModel20", "GSF_GLO_CT_Model20"]):
+        model_in_gledeli = "GLO-CT"
         glede._gsf.gdr_model = model_in_gledeli
         logger.debug(f"Set gledeli nld model to {model_in_gledeli}")
-    elif "GSF_EGLOModel20" in model_names:
-        model_in_gledeli = "EGLO"
+    elif "GSF_EGLO_CT_Model20" in model_names:
+        model_in_gledeli = "EGLO-CT"
+        glede._gsf.gdr_model = model_in_gledeli
+        logger.debug(f"Set gledeli nld model to {model_in_gledeli}")
+    elif "GSF_MGLO_CT_Model20" in model_names:
+        model_in_gledeli = "MGLO-CT"
+        glede._gsf.gdr_model = model_in_gledeli
+        logger.debug(f"Set gledeli nld model to {model_in_gledeli}")
+    elif "GSF_GH_CT_Model20" in model_names:
+        model_in_gledeli = "GH-CT"
         glede._gsf.gdr_model = model_in_gledeli
         logger.debug(f"Set gledeli nld model to {model_in_gledeli}")
     else:

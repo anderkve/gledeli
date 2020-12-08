@@ -8,7 +8,7 @@ file_path = Path(__file__).resolve()
 import sys  # noqa
 sys.path.append(str(file_path.parents[1]))
 
-from gledeli.create_gsf import CreateGSF, fGLO_CT, fEGLO_CT  # noqa
+from gledeli.create_gsf import CreateGSF, fGLO_CT, fEGLO_CT, fMGLO_CT  # noqa
 
 
 @pytest.mark.parametrize(
@@ -55,8 +55,9 @@ gsf_pars_EGLO['k'] = 2.
 
 @pytest.mark.parametrize(
                 "gdr_model, gsf_pars",
-                 [('GLO', gsf_pars_GLO),
-                   ('EGLO', gsf_pars_EGLO)]) # noqa
+                 [('GLO-CT', gsf_pars_GLO),
+                   ('EGLO-CT', gsf_pars_EGLO),
+                   ('MGLO-CT', gsf_pars_EGLO)]) # noqa
 def test_model_selection(gdr_model, gsf_pars):
     gsf = CreateGSF(pars=gsf_pars)
     gsf.gdr_model = gdr_model
@@ -64,11 +65,15 @@ def test_model_selection(gdr_model, gsf_pars):
     x = np.linspace(0, 20)
     gsf_create = gsf.create(x).values
 
-    if gdr_model == "GLO":
+    if gdr_model == "GLO-CT":
         function = fGLO_CT(x, gsf_pars['p1'], gsf_pars['p2'],
                            gsf_pars['p3'], gsf_pars['T'])
-    elif gdr_model == "EGLO":
+    elif gdr_model == "EGLO-CT":
         function = fEGLO_CT(x, gsf_pars['p1'], gsf_pars['p2'],
+                            gsf_pars['p3'], gsf_pars['T'],
+                            gsf_pars['epsilon_0'], gsf_pars_EGLO['k'])
+    elif gdr_model == "MGLO-CT":
+        function = fMGLO_CT(x, gsf_pars['p1'], gsf_pars['p2'],
                             gsf_pars['p3'], gsf_pars['T'],
                             gsf_pars['epsilon_0'], gsf_pars_EGLO['k'])
     assert_equal(gsf_create, function)

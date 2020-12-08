@@ -25,10 +25,10 @@ gsf_pars['p10'], gsf_pars['p11'], gsf_pars['p12'] = np.array([10.6, 30., 4.9])
 gsf_pars['p13'], gsf_pars['p14'], gsf_pars['p15'] = np.array([2.81, 0.54, 0.76]) # noqa
 gsf_pars['T'] = 0.61
 
-model_nameGLO = "GSF_GLOModel20"
+model_nameGLO = "GSF_GLO_CT_Model20"
 gsf_pars_GLO = copy.deepcopy(gsf_pars)
 
-model_nameEGLO = "GSF_EGLOModel20"
+model_nameEGLO = "GSF_EGLO_CT_Model20"
 gsf_pars_EGLO = copy.deepcopy(gsf_pars)
 gsf_pars_EGLO['epsilon_0'] = 5.
 gsf_pars_EGLO['k'] = 2.
