@@ -65,6 +65,16 @@ def set_model_names(model_names):
         raise NotImplementedError("Selected GSF model unknown")
 
 
+def set_lnlike_cutoff(lnlike_cutoff):
+    """
+    Set model according to active models from GAMBIT
+    """
+    assert np.isfinite(lnlike_cutoff)
+    logger.debug("Attempt to set logLikecutoff in gledeli from gambit "
+                 f"to {lnlike_cutoff}.")
+    glede.lnlike_cutoff = lnlike_cutoff
+
+
 def set_model_pars(pars):
     """
     Communicate model parameters from GAMBIT to GLEDELi

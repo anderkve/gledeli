@@ -56,8 +56,6 @@ class ParametrizedInterface:
         # set response from oslo-method experiment
         self.set_firstgen_experiments()
 
-        # cutoff for calculations (TODO: grab from gambit)
-        self.glede.lnlike_cutoff = -5e6
         return self.glede
 
     def set_exp_data_D0_Gg(self):
