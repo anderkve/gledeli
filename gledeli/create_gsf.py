@@ -4,7 +4,7 @@ import logging
 
 from ompy import Vector
 
-from .gsf_models import fSLO, fGLO_CT, fEGLO_CT, fMGLO_CT, fGH_CT
+from .gsf_models import fSP, fSLO, fGLO_CT, fEGLO_CT, fMGLO_CT, fGH_CT
 
 logger = logging.getLogger(__name__)
 
@@ -205,6 +205,13 @@ class CreateGSF:
 
         # Single SLO
         y = fSLO(x, pars['p13'], pars['p14'], pars['p15'])
+
+        # TODO: improove interface here; see also #28
+        try:
+            y += fSP(pars["constantM1"])
+        except KeyError:
+            pass
+
         return y
 
     @property
