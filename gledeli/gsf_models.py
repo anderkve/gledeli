@@ -260,7 +260,7 @@ def fMGLO_CT(E: Union[np.ndarray, float],
 
 def fGH_CT(E: Union[np.ndarray, float],
            E0: float, sigma0: float, Gamma0: float,
-           T: float, KGH: float = 0.63) -> Union[np.ndarray, float]:
+           T: float, k: float = 0.63) -> Union[np.ndarray, float]:
     """Goriely's Hybrid model, but with constant temperature of final states
 
     adapted from:
@@ -282,11 +282,13 @@ def fGH_CT(E: Union[np.ndarray, float],
             Width parameter
         T (float):
             Temperature parameter
+        k (float, optional):
+            enhancement factor
 
     Returns:
         Union[np.ndarray, float]: strength function
     """
-    Gamma = KGH * Gamma0 * (E**2 + 4 * pi**2 * T**2) / (E*E0)
+    Gamma = k * Gamma0 * (E**2 + 4 * pi**2 * T**2) / (E*E0)
     f1 = (E * Gamma) / ((E**2 - E0**2)**2 + E**2 * Gamma**2)
 
     f = strength_factor * sigma0 * Gamma0 * f1
