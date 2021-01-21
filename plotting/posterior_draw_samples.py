@@ -474,7 +474,9 @@ class PosteriorPlotter:
 
     def plot_posterior_marginals(self,
                                  data: pd.DataFrame, key: str, ax=None,
-                                 histrange=None, qs=0.999, **kwargs):
+                                 histrange=None, qs=0.999,
+                                 logbins=False,
+                                 **kwargs):
         """ Plots marginalized posteriors
 
         Args:
@@ -485,6 +487,7 @@ class PosteriorPlotter:
             histrange: range for histogram. If not provided (default),
                 calculates it from the fraction `qs` of sample to include
             qs: fraction of sample to include in bound, defaults to 0.999.
+            logbins: use logarithmic bins
             kwargs: Additional kwargs for plotting
 
         Returns:
@@ -502,6 +505,13 @@ class PosteriorPlotter:
             histrange = self.quantile(x, q, weights=weights)
         hist, bin_edges = np.histogram(x, bins=100, weights=weights,
                                        range=histrange)
+        if logbins:
+            if histrange == 0:
+                raise NotImplementedError("For log bins, lower >! 0 ")
+            bin_edges = np.geomspace(histrange[0], histrange[-1],
+                                     len(bin_edges))
+            ax.set_xscale("log")
+
         bin_width = np.diff(bin_edges)
         hist /= hist.max()
         ax.bar(bin_edges[:-1], hist, width=bin_width, align="edge",
@@ -756,7 +766,13 @@ if __name__ == "__main__":
             base = ""
         else:
             base = "dependent_"
-        fig, _ = pp.plot_posterior_marginals(results, key, alpha=0.5)
+
+        if key == "gsf_constantM1":
+            logbins = True
+        else:
+            logbins = False
+        fig, _ = pp.plot_posterior_marginals(results, key, alpha=0.5,
+                                             logbins=logbins)
         fig.savefig(figdir / (f'{base}{key}_posterior_hist.png'))
         plt.close(fig)
 
